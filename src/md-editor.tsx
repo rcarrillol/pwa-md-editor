@@ -71,6 +71,50 @@ const css = `
     font-family: inherit;
   }
   .btn-open:hover { background: #8b949e22; border-color: #8b949e; color: #c9d1d9; }
+  .btn-dir {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: #3fb950;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    line-height: 1;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .btn-dir:hover { background: #3fb95022; border-color: #3fb950; }
+
+  .dir-label {
+    padding: 5px 14px;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #3fb950;
+    background: #0d1a0f;
+    border-bottom: 1px solid #1a2e1a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    min-height: 0;
+  }
+  .dir-label-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .btn-unpin {
+    background: none; border: none;
+    color: #3fb95066; cursor: pointer;
+    font-size: 14px; padding: 0 2px;
+    border-radius: 3px; font-family: inherit;
+    transition: color .15s;
+    flex-shrink: 0;
+  }
+  .btn-unpin:hover { color: #f85149; }
+
   .btn-close-sidebar {
     display: none;
     background: none; border: none;
@@ -539,6 +583,7 @@ interface Doc {
   id: string;
   title: string;
   content: string;
+  fileHandle?: FileSystemFileHandle; // presente solo en docs respaldados por el FS
 }
 
 // ── Main component ─────────────────────────────────────────────────────────
@@ -553,6 +598,7 @@ export default function App() {
   const [newContent, setNewContent] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [dirName, setDirName] = useState<string | null>(null);
   const modalInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -579,7 +625,11 @@ export default function App() {
   }, []);
 
   const persist = useCallback((nextDocs: Doc[]) => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(nextDocs)); } catch {}
+    try {
+      // los docs con fileHandle viven en el FS, no en localStorage
+      const local = nextDocs.filter(d => !d.fileHandle);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
+    } catch {}
   }, []);
 
   const activeDoc = docs.find(d => d.id === activeId) || null;
@@ -596,8 +646,17 @@ export default function App() {
     setUnsaved(val !== (activeDoc?.content ?? ""));
   };
 
-  const saveDoc = () => {
+  const saveDoc = async () => {
     if (!activeDoc || !unsaved) return;
+    if (activeDoc.fileHandle) {
+      try {
+        const writable = await activeDoc.fileHandle.createWritable();
+        await writable.write(draftContent);
+        await writable.close();
+      } catch {
+        return; // permiso denegado u otro error — no marcar como guardado
+      }
+    }
     const next = docs.map(d => d.id === activeId ? { ...d, content: draftContent } : d);
     setDocs(next);
     setUnsaved(false);
@@ -614,6 +673,60 @@ export default function App() {
       setUnsaved(false);
     }
     persist(next);
+  };
+
+  const openDirectory = async () => {
+    if (!("showDirectoryPicker" in window)) {
+      alert("Tu navegador no soporta la File System Access API.\nUsa Chrome 86+ o Edge.");
+      return;
+    }
+    try {
+      const dirHandle = await (window as unknown as {
+        showDirectoryPicker(o?: { mode: string }): Promise<FileSystemDirectoryHandle>
+      }).showDirectoryPicker({ mode: "readwrite" });
+
+      const newDocs: Doc[] = [];
+      for await (const entry of dirHandle.values()) {
+        if (entry.kind === "file" && /\.(md|markdown|txt)$/i.test(entry.name)) {
+          const fileHandle = entry as FileSystemFileHandle;
+          const file = await fileHandle.getFile();
+          const content = await file.text();
+          const title = entry.name.replace(/\.(md|markdown|txt)$/i, "");
+          newDocs.push({ id: uid(), title, content, fileHandle });
+        }
+      }
+      newDocs.sort((a, b) => a.title.localeCompare(b.title));
+
+      setDirName(dirHandle.name);
+      setDocs(prev => {
+        // reemplaza los docs anteriores del directorio, conserva los locales
+        const local = prev.filter(d => !d.fileHandle);
+        return [...newDocs, ...local];
+      });
+      if (newDocs.length > 0) {
+        setActiveId(newDocs[0].id);
+        setDraftContent(newDocs[0].content);
+        setUnsaved(false);
+      }
+      setSidebarOpen(false);
+    } catch {
+      // usuario canceló el picker
+    }
+  };
+
+  const unpinDirectory = () => {
+    setDirName(null);
+    setDocs(prev => {
+      const local = prev.filter(d => !d.fileHandle);
+      // si el doc activo era del directorio, seleccionar el primero local
+      if (activeId && docs.find(d => d.id === activeId)?.fileHandle) {
+        const first = local[0] || null;
+        setActiveId(first?.id || null);
+        setDraftContent(first?.content || "");
+        setUnsaved(false);
+      }
+      return local;
+    });
   };
 
   const handleFileOpen = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -688,6 +801,7 @@ export default function App() {
           <div className="sidebar-header">
             <button className="btn-close-sidebar" onClick={() => setSidebarOpen(false)} title="Cerrar">✕</button>
             <span className="sidebar-title">docs</span>
+            <button className="btn-dir" onClick={openDirectory} title="Anclar directorio">⊞</button>
             <button className="btn-open" onClick={() => fileInputRef.current?.click()} title="Abrir archivo .md">↑</button>
             <button className="btn-new" onClick={openModal} title="Nuevo documento">＋</button>
             <input
@@ -699,6 +813,13 @@ export default function App() {
               onChange={handleFileOpen}
             />
           </div>
+          {dirName && (
+            <div className="dir-label">
+              <span>⌂</span>
+              <span className="dir-label-name" title={dirName}>{dirName}</span>
+              <button className="btn-unpin" onClick={unpinDirectory} title="Desanclar directorio">✕</button>
+            </div>
+          )}
           <div className="doc-list">
             {docs.length === 0 && (
               <div style={{ padding: "16px", color: "#444", fontSize: "11px", textAlign: "center" }}>
