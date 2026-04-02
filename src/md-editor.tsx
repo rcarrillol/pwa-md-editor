@@ -217,6 +217,26 @@ const css = `
     align-items: center; justify-content: center;
   }
   .btn-menu:hover { color: #c9d1d9; background: #1a1a1a; }
+  .btn-install {
+    background: #1a1a1a;
+    border: 1px solid #58a6ff66;
+    color: #58a6ff;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-family: inherit;
+    letter-spacing: .5px;
+    transition: all .15s;
+    display: flex; align-items: center; gap: 5px;
+    min-height: 32px;
+    animation: pulse-border 2s infinite;
+  }
+  .btn-install:hover { background: #58a6ff22; border-color: #58a6ff; }
+  @keyframes pulse-border {
+    0%, 100% { border-color: #58a6ff66; }
+    50%       { border-color: #58a6ffcc; }
+  }
 
   .doc-title-display {
     flex: 1;
@@ -599,6 +619,7 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dirName, setDirName] = useState<string | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<Event & { prompt(): Promise<void> } | null>(null);
   const modalInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -773,6 +794,17 @@ export default function App() {
     persist(next);
   };
 
+  // Captura el prompt de instalación PWA
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as Event & { prompt(): Promise<void> });
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    window.addEventListener("appinstalled", () => setInstallPrompt(null));
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
   // Ctrl/Cmd+S to save
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -855,6 +887,15 @@ export default function App() {
                 ? <span>{activeDoc.title}</span>
                 : <span style={{color:"#333"}}>ningún documento</span>}
             </div>
+            {installPrompt && (
+              <button
+                className="btn-install"
+                onClick={async () => { await installPrompt.prompt(); setInstallPrompt(null); }}
+                title="Instalar como aplicación"
+              >
+                ↓ instalar
+              </button>
+            )}
             <div className="mode-group">
               {(["edit","split","view"] as const).map(m => (
                 <button key={m} className={`btn-mode${mode===m?" active":""}`} onClick={() => setMode(m)}>
