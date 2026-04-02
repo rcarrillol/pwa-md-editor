@@ -58,6 +58,19 @@ const css = `
     font-family: inherit;
   }
   .btn-new:hover { background: #58a6ff22; border-color: #58a6ff; }
+  .btn-open {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: #8b949e;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .btn-open:hover { background: #8b949e22; border-color: #8b949e; color: #c9d1d9; }
 
   .doc-list {
     flex: 1;
@@ -529,6 +542,7 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const modalInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load from localStorage
   useEffect(() => {
@@ -590,6 +604,31 @@ export default function App() {
     persist(next);
   };
 
+  const handleFileOpen = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const content = reader.result as string;
+        const title = file.name.replace(/\.(md|markdown|txt)$/i, "");
+        const doc: Doc = { id: uid(), title, content };
+        setDocs(prev => {
+          const next = [doc, ...prev];
+          persist(next);
+          return next;
+        });
+        setActiveId(doc.id);
+        setDraftContent(content);
+        setUnsaved(false);
+        setSidebarOpen(false);
+      };
+      reader.readAsText(file);
+    });
+    // reset so el mismo archivo se puede abrir de nuevo
+    e.target.value = "";
+  };
+
   const openModal = () => {
     setNewTitle(""); setNewContent(""); setShowModal(true);
     setTimeout(() => modalInputRef.current?.focus(), 50);
@@ -636,7 +675,16 @@ export default function App() {
         <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
           <div className="sidebar-header">
             <span className="sidebar-title">docs</span>
+            <button className="btn-open" onClick={() => fileInputRef.current?.click()} title="Abrir archivo .md">↑</button>
             <button className="btn-new" onClick={openModal} title="Nuevo documento">＋</button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".md,.markdown,.txt"
+              multiple
+              style={{ display: "none" }}
+              onChange={handleFileOpen}
+            />
           </div>
           <div className="doc-list">
             {docs.length === 0 && (
