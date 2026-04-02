@@ -61,6 +61,7 @@ const css = `
 
   .doc-list {
     flex: 1;
+    min-height: 0; /* flex + overflow-y: auto requiere esto para scrollear */
     overflow-y: auto;
     overflow-x: hidden;
     padding: 6px 0;
