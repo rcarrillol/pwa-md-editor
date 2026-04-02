@@ -686,7 +686,7 @@ export default function App() {
       }).showDirectoryPicker({ mode: "readwrite" });
 
       const newDocs: Doc[] = [];
-      for await (const entry of dirHandle.values()) {
+      for await (const entry of (dirHandle as unknown as AsyncIterable<FileSystemHandle>)) {
         if (entry.kind === "file" && /\.(md|markdown|txt)$/i.test(entry.name)) {
           const fileHandle = entry as FileSystemFileHandle;
           const file = await fileHandle.getFile();
