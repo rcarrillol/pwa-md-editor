@@ -16,8 +16,8 @@ export default defineConfig({
         background_color: "#0d0d0d",
         display: "standalone",
         orientation: "any",
-        scope: "/",
-        start_url: "/",
+        scope: "/pwa-md-editor/",
+        start_url: "/pwa-md-editor/",
         icons: [
           {
             src: "icons/pwa-64x64.png",
@@ -47,7 +47,5 @@ export default defineConfig({
       },
     }),
   ],
-  // For GitHub Pages: change base to "/<repo-name>/"
-  // For Netlify / direct domain: keep as "/"
-  base: "/",
+  base: "/pwa-md-editor/",
 });
