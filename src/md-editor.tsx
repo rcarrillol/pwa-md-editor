@@ -71,6 +71,18 @@ const css = `
     font-family: inherit;
   }
   .btn-open:hover { background: #8b949e22; border-color: #8b949e; color: #c9d1d9; }
+  .btn-close-sidebar {
+    display: none;
+    background: none; border: none;
+    color: #555; cursor: pointer;
+    font-size: 18px; padding: 4px 6px;
+    border-radius: 4px; font-family: inherit;
+    min-width: 32px; min-height: 32px;
+    align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .btn-close-sidebar:hover { color: #c9d1d9; background: #1a1a1a; }
+  @media (max-width: 600px) { .btn-close-sidebar { display: flex; } }
 
   .doc-list {
     flex: 1;
@@ -674,6 +686,7 @@ export default function App() {
         {/* SIDEBAR */}
         <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
           <div className="sidebar-header">
+            <button className="btn-close-sidebar" onClick={() => setSidebarOpen(false)} title="Cerrar">✕</button>
             <span className="sidebar-title">docs</span>
             <button className="btn-open" onClick={() => fileInputRef.current?.click()} title="Abrir archivo .md">↑</button>
             <button className="btn-new" onClick={openModal} title="Nuevo documento">＋</button>
