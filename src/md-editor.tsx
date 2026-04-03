@@ -645,6 +645,35 @@ export default function App() {
     setLoaded(true);
   }, []);
 
+  // File Handling API — abre archivos .md cuando Android lanza la PWA
+  useEffect(() => {
+    if (!("launchQueue" in window)) return;
+    type LaunchParams = { files: FileSystemFileHandle[] };
+    (window as unknown as { launchQueue: { setConsumer(cb: (p: LaunchParams) => void): void } })
+      .launchQueue.setConsumer(async ({ files }) => {
+        if (!files || files.length === 0) return;
+        const newDocs: Doc[] = [];
+        for (const fileHandle of files) {
+          try {
+            const file = await fileHandle.getFile();
+            if (!/\.(md|markdown|txt)$/i.test(file.name)) continue;
+            const content = await file.text();
+            const title = file.name.replace(/\.(md|markdown|txt)$/i, "");
+            newDocs.push({ id: uid(), title, content, fileHandle });
+          } catch { /* permiso denegado u otro error */ }
+        }
+        if (newDocs.length === 0) return;
+        setDocs(prev => {
+          const next = [...newDocs, ...prev];
+          // no persistimos en localStorage; estos docs viven en el FS
+          return next;
+        });
+        setActiveId(newDocs[0].id);
+        setDraftContent(newDocs[0].content);
+        setUnsaved(false);
+      });
+  }, []);
+
   const persist = useCallback((nextDocs: Doc[]) => {
     try {
       // los docs con fileHandle viven en el FS, no en localStorage
