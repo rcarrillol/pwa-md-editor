@@ -41,6 +41,15 @@ export default defineConfig({
             purpose: "maskable",
           },
         ],
+        file_handlers: [
+          {
+            action: "/pwa-md-editor/",
+            accept: {
+              "text/markdown": [".md", ".markdown"],
+              "text/plain": [".txt"],
+            },
+          },
+        ],
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
