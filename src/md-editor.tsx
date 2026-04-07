@@ -115,6 +115,39 @@ const css = `
   }
   .btn-unpin:hover { color: #f85149; }
 
+  /* FOLDER TREE */
+  .folder-row {
+    display: flex;
+    align-items: center;
+    padding: 5px 14px;
+    gap: 6px;
+    cursor: pointer;
+    min-height: 30px;
+    user-select: none;
+    transition: background .1s;
+  }
+  .folder-row:hover { background: #1a1a1a; }
+  .folder-chevron {
+    color: #555;
+    font-size: 9px;
+    width: 10px;
+    flex-shrink: 0;
+    display: inline-block;
+    transition: transform .15s;
+  }
+  .folder-icon { color: #e3b341; font-size: 12px; flex-shrink: 0; }
+  .folder-name {
+    color: #8b949e;
+    font-size: 11px;
+    letter-spacing: .5px;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .folder-row:hover .folder-name { color: #c9d1d9; }
+  .tree-section { margin-bottom: 4px; }
+
   .btn-close-sidebar {
     display: none;
     background: none; border: none;
@@ -640,6 +673,59 @@ interface Doc {
   title: string;
   content: string;
   fileHandle?: FileSystemFileHandle; // presente solo en docs respaldados por el FS
+  path?: string[];                   // sub-carpetas relativas al directorio raíz
+}
+
+// ── File tree types & helpers ──────────────────────────────────────────────
+type FolderNode = { type: "folder"; name: string; key: string; children: FileTreeItem[] };
+type FileTreeItem = Doc | FolderNode;
+
+function groupByFolder(docs: Doc[], depth = 0): FileTreeItem[] {
+  const folders = new Map<string, Doc[]>();
+  const files: Doc[] = [];
+
+  for (const doc of docs) {
+    const p = doc.path ?? [];
+    if (p.length <= depth) {
+      files.push(doc);
+    } else {
+      const name = p[depth];
+      if (!folders.has(name)) folders.set(name, []);
+      folders.get(name)!.push(doc);
+    }
+  }
+
+  const result: FileTreeItem[] = [];
+  for (const [name, children] of [...folders.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+    const key = children[0].path!.slice(0, depth + 1).join("/");
+    result.push({ type: "folder", name, key, children: groupByFolder(children, depth + 1) });
+  }
+  files.sort((a, b) => a.title.localeCompare(b.title));
+  result.push(...files);
+  return result;
+}
+
+async function readDirRecursive(
+  dirHandle: FileSystemDirectoryHandle,
+  path: string[] = []
+): Promise<Doc[]> {
+  const results: Doc[] = [];
+  for await (const entry of (dirHandle as unknown as { values(): AsyncIterable<FileSystemHandle> }).values()) {
+    if (entry.kind === "file" && /\.(md|markdown|txt)$/i.test(entry.name)) {
+      const fileHandle = entry as FileSystemFileHandle;
+      const file = await fileHandle.getFile();
+      const content = await file.text();
+      const title = entry.name.replace(/\.(md|markdown|txt)$/i, "");
+      results.push({ id: uid(), title, content, fileHandle, path });
+    } else if (entry.kind === "directory") {
+      const sub = await readDirRecursive(
+        entry as unknown as FileSystemDirectoryHandle,
+        [...path, entry.name]
+      );
+      results.push(...sub);
+    }
+  }
+  return results;
 }
 
 // ── Main component ─────────────────────────────────────────────────────────
@@ -655,6 +741,7 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dirName, setDirName] = useState<string | null>(null);
+  const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [installPrompt, setInstallPrompt] = useState<Event & { prompt(): Promise<void> } | null>(null);
   const modalInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -776,17 +863,14 @@ export default function App() {
         showDirectoryPicker(o?: { mode: string }): Promise<FileSystemDirectoryHandle>
       }).showDirectoryPicker({ mode: "readwrite" });
 
-      const newDocs: Doc[] = [];
-      for await (const entry of (dirHandle as unknown as { values(): AsyncIterable<FileSystemHandle> }).values()) {
-        if (entry.kind === "file" && /\.(md|markdown|txt)$/i.test(entry.name)) {
-          const fileHandle = entry as FileSystemFileHandle;
-          const file = await fileHandle.getFile();
-          const content = await file.text();
-          const title = entry.name.replace(/\.(md|markdown|txt)$/i, "");
-          newDocs.push({ id: uid(), title, content, fileHandle });
-        }
-      }
-      newDocs.sort((a, b) => a.title.localeCompare(b.title));
+      const newDocs = await readDirRecursive(dirHandle);
+      newDocs.sort((a, b) => {
+        const pa = (a.path ?? []).join("/");
+        const pb = (b.path ?? []).join("/");
+        if (pa !== pb) return pa.localeCompare(pb);
+        return a.title.localeCompare(b.title);
+      });
+      setCollapsedFolders(new Set());
 
       setDirName(dirHandle.name);
       setDocs(prev => {
@@ -817,6 +901,14 @@ export default function App() {
         setUnsaved(false);
       }
       return local;
+    });
+  };
+
+  const toggleFolder = (key: string) => {
+    setCollapsedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
     });
   };
 
@@ -928,21 +1020,59 @@ export default function App() {
                 Sin documentos
               </div>
             )}
-            {docs.map(doc => (
-              <div
-                key={doc.id}
-                className={`doc-item${activeId === doc.id ? " active" : ""}${activeId === doc.id && unsaved ? " unsaved" : ""}`}
-                onClick={() => selectDoc(doc)}
-              >
-                <div className="doc-item-dot" />
-                <div className="doc-item-name" title={doc.title}>{doc.title}</div>
-                <button
-                  className="btn-del"
-                  title="Eliminar"
-                  onClick={e => { e.stopPropagation(); deleteDoc(doc.id); }}
-                >×</button>
-              </div>
-            ))}
+            {(() => {
+              const dirDocs = docs.filter(d => d.fileHandle);
+              const localDocs = docs.filter(d => !d.fileHandle);
+
+              const renderDocItem = (doc: Doc, depth = 0) => (
+                <div
+                  key={doc.id}
+                  className={`doc-item${activeId === doc.id ? " active" : ""}${activeId === doc.id && unsaved ? " unsaved" : ""}`}
+                  style={{ paddingLeft: `${14 + depth * 14}px` }}
+                  onClick={() => selectDoc(doc)}
+                >
+                  <div className="doc-item-dot" />
+                  <div className="doc-item-name" title={doc.title}>{doc.title}</div>
+                  <button
+                    className="btn-del"
+                    title="Eliminar"
+                    onClick={e => { e.stopPropagation(); deleteDoc(doc.id); }}
+                  >×</button>
+                </div>
+              );
+
+              const renderTree = (items: FileTreeItem[], depth = 0): React.ReactNode =>
+                items.map(item => {
+                  if ("type" in item && item.type === "folder") {
+                    const collapsed = collapsedFolders.has(item.key);
+                    return (
+                      <div key={item.key} className="tree-section">
+                        <div
+                          className="folder-row"
+                          style={{ paddingLeft: `${14 + depth * 14}px` }}
+                          onClick={() => toggleFolder(item.key)}
+                        >
+                          <span className="folder-chevron">{collapsed ? "▶" : "▼"}</span>
+                          <span className="folder-icon">{collapsed ? "📁" : "📂"}</span>
+                          <span className="folder-name">{item.name}</span>
+                        </div>
+                        {!collapsed && renderTree(item.children, depth + 1)}
+                      </div>
+                    );
+                  }
+                  return renderDocItem(item as Doc, depth);
+                });
+
+              return (
+                <>
+                  {dirDocs.length > 0 && renderTree(groupByFolder(dirDocs))}
+                  {dirDocs.length > 0 && localDocs.length > 0 && (
+                    <div style={{ height: "1px", background: "#1e1e1e", margin: "4px 0" }} />
+                  )}
+                  {localDocs.map(doc => renderDocItem(doc, 0))}
+                </>
+              );
+            })()}
           </div>
         </aside>
 
