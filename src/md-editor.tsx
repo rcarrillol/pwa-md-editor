@@ -678,36 +678,32 @@ export default function App() {
       setActiveId(DEFAULT_DOC.id);
       setDraftContent(DEFAULT_DOC.content);
     }
-    setLoaded(true);
-  }, []);
-
-  // File Handling API — abre archivos .md cuando Android lanza la PWA
-  useEffect(() => {
-    if (!("launchQueue" in window)) return;
-    type LaunchParams = { files: FileSystemFileHandle[] };
-    (window as unknown as { launchQueue: { setConsumer(cb: (p: LaunchParams) => void): void } })
-      .launchQueue.setConsumer(async ({ files }) => {
-        if (!files || files.length === 0) return;
-        const newDocs: Doc[] = [];
-        for (const fileHandle of files) {
-          try {
-            const file = await fileHandle.getFile();
-            if (!/\.(md|markdown|txt)$/i.test(file.name)) continue;
-            const content = await file.text();
-            const title = file.name.replace(/\.(md|markdown|txt)$/i, "");
-            newDocs.push({ id: uid(), title, content, fileHandle });
-          } catch { /* permiso denegado u otro error */ }
-        }
-        if (newDocs.length === 0) return;
+    // Web Share Target — abre archivos .md compartidos desde Android
+    void (async () => {
+      if (!("caches" in window)) return;
+      try {
+        const cache = await caches.open("share-target-v1");
+        const res = await cache.match("/pwa-md-editor/__shared-file__");
+        if (!res) return;
+        await cache.delete("/pwa-md-editor/__shared-file__");
+        const { name, content } = await res.json() as { name: string; content: string };
+        const title = name.replace(/\.(md|markdown|txt)$/i, "");
+        const doc: Doc = { id: uid(), title, content };
         setDocs(prev => {
-          const next = [...newDocs, ...prev];
-          // no persistimos en localStorage; estos docs viven en el FS
+          const next = [doc, ...prev];
+          try {
+            const local = next.filter(d => !d.fileHandle);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
+          } catch {}
           return next;
         });
-        setActiveId(newDocs[0].id);
-        setDraftContent(newDocs[0].content);
+        setActiveId(doc.id);
+        setDraftContent(content);
         setUnsaved(false);
-      });
+      } catch { /* ignorar errores de cache */ }
+    })();
+
+    setLoaded(true);
   }, []);
 
   const persist = useCallback((nextDocs: Doc[]) => {

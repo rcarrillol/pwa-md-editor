@@ -7,7 +7,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
       includeAssets: ["*.png", "*.ico", "icon.svg"],
+      injectManifest: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
+      },
       manifest: {
         name: "MD Editor",
         short_name: "MDEdit",
@@ -41,20 +47,22 @@ export default defineConfig({
             purpose: "maskable",
           },
         ],
-        file_handlers: [
-          {
-            action: "/pwa-md-editor/",
-            accept: {
-              "text/markdown": [".md", ".markdown"],
-              "text/plain": [".txt"],
-            },
+        share_target: {
+          action: "/pwa-md-editor/share",
+          method: "POST",
+          enctype: "multipart/form-data",
+          params: {
+            files: [
+              {
+                name: "file",
+                accept: ["text/markdown", "text/plain", ".md", ".markdown", ".txt"],
+              },
+            ],
           },
-        ],
-      },
-      workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
+        },
       },
     }),
   ],
   base: "/pwa-md-editor/",
 });
+
