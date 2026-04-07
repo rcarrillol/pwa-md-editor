@@ -187,6 +187,35 @@ const css = `
   @media (hover: none) { .btn-del { opacity: 0.5; } }
   .btn-del:hover { color: #f85149; background: #f8514922; }
 
+  .folder-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    cursor: pointer;
+    user-select: none;
+    color: #6e7681;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    min-height: 30px;
+    border-left: 2px solid transparent;
+    transition: background .1s, color .1s;
+  }
+  .folder-header:hover { background: #161616; color: #8b949e; }
+  .folder-toggle { font-size: 8px; flex-shrink: 0; }
+  .folder-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .local-separator {
+    padding: 5px 14px;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #333;
+    border-top: 1px solid #1a1a1a;
+    margin-top: 4px;
+  }
+
   /* MAIN */
   .main {
     flex: 1;
@@ -592,6 +621,30 @@ function renderMarkdown(md: string): string {
 let _id = 0;
 const uid = () => `doc_${Date.now()}_${_id++}`;
 
+// ── Recursive directory loader ─────────────────────────────────────────────
+async function collectDocs(
+  handle: FileSystemDirectoryHandle,
+  path: string[],
+  result: Doc[]
+): Promise<void> {
+  const iter = (handle as unknown as { values(): AsyncIterable<FileSystemHandle> }).values();
+  for await (const entry of iter) {
+    if (entry.kind === "file" && /\.(md|markdown|txt)$/i.test(entry.name)) {
+      const fileHandle = entry as FileSystemFileHandle;
+      const file = await fileHandle.getFile();
+      const content = await file.text();
+      const title = entry.name.replace(/\.(md|markdown|txt)$/i, "");
+      result.push({ id: uid(), title, content, fileHandle, path });
+    } else if (entry.kind === "directory") {
+      await collectDocs(
+        entry as unknown as FileSystemDirectoryHandle,
+        [...path, entry.name],
+        result
+      );
+    }
+  }
+}
+
 // ── Default doc ───────────────────────────────────────────────────────────
 const DEFAULT_DOC = {
   id: uid(),
@@ -604,6 +657,14 @@ interface Doc {
   title: string;
   content: string;
   fileHandle?: FileSystemFileHandle; // presente solo en docs respaldados por el FS
+  path?: string[];                   // ruta relativa dentro del directorio raíz
+}
+
+interface FolderNode {
+  name: string;
+  fullPath: string; // ej. "notas/trabajo" — se usa como clave de colapso
+  subs: Map<string, FolderNode>;
+  docs: Doc[];
 }
 
 // ── Main component ─────────────────────────────────────────────────────────
@@ -619,6 +680,7 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dirName, setDirName] = useState<string | null>(null);
+  const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [installPrompt, setInstallPrompt] = useState<Event & { prompt(): Promise<void> } | null>(null);
   const modalInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -736,20 +798,17 @@ export default function App() {
       }).showDirectoryPicker({ mode: "readwrite" });
 
       const newDocs: Doc[] = [];
-      for await (const entry of (dirHandle as unknown as { values(): AsyncIterable<FileSystemHandle> }).values()) {
-        if (entry.kind === "file" && /\.(md|markdown|txt)$/i.test(entry.name)) {
-          const fileHandle = entry as FileSystemFileHandle;
-          const file = await fileHandle.getFile();
-          const content = await file.text();
-          const title = entry.name.replace(/\.(md|markdown|txt)$/i, "");
-          newDocs.push({ id: uid(), title, content, fileHandle });
-        }
-      }
-      newDocs.sort((a, b) => a.title.localeCompare(b.title));
+      await collectDocs(dirHandle, [], newDocs);
+      newDocs.sort((a, b) => {
+        const pa = (a.path ?? []).join("/");
+        const pb = (b.path ?? []).join("/");
+        if (pa !== pb) return pa.localeCompare(pb);
+        return a.title.localeCompare(b.title);
+      });
 
+      setCollapsedFolders(new Set());
       setDirName(dirHandle.name);
       setDocs(prev => {
-        // reemplaza los docs anteriores del directorio, conserva los locales
         const local = prev.filter(d => !d.fileHandle);
         return [...newDocs, ...local];
       });
@@ -846,6 +905,70 @@ export default function App() {
     return () => window.removeEventListener("keydown", handler);
   });
 
+  // ── Tree helpers ────────────────────────────────────────────────────────
+  const buildTree = (dirDocs: Doc[]): FolderNode => {
+    const root: FolderNode = { name: "", fullPath: "", subs: new Map(), docs: [] };
+    for (const doc of dirDocs) {
+      const segs = doc.path ?? [];
+      let node = root;
+      for (let i = 0; i < segs.length; i++) {
+        const seg = segs[i];
+        const fp = segs.slice(0, i + 1).join("/");
+        if (!node.subs.has(seg)) {
+          node.subs.set(seg, { name: seg, fullPath: fp, subs: new Map(), docs: [] });
+        }
+        node = node.subs.get(seg)!;
+      }
+      node.docs.push(doc);
+    }
+    return root;
+  };
+
+  const toggleFolder = (fp: string) => {
+    setCollapsedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(fp)) next.delete(fp); else next.add(fp);
+      return next;
+    });
+  };
+
+  const renderFolderNode = (node: FolderNode, depth: number) => {
+    const indent = 14 + depth * 10;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: any[] = [];
+    const subs = [...node.subs.values()].sort((a, b) => a.name.localeCompare(b.name));
+    const nodeDocs = [...node.docs].sort((a, b) => a.title.localeCompare(b.title));
+
+    for (const sub of subs) {
+      const collapsed = collapsedFolders.has(sub.fullPath);
+      result.push(
+        <div key={`folder:${sub.fullPath}`} className="folder-header"
+          style={{ paddingLeft: indent }}
+          onClick={() => toggleFolder(sub.fullPath)}>
+          <span className="folder-toggle">{collapsed ? "▶" : "▼"}</span>
+          <span className="folder-name">{sub.name}</span>
+        </div>
+      );
+      if (!collapsed) result.push(...renderFolderNode(sub, depth + 1));
+    }
+
+    for (const doc of nodeDocs) {
+      const isActive = activeId === doc.id;
+      result.push(
+        <div key={doc.id}
+          className={`doc-item${isActive ? " active" : ""}${isActive && unsaved ? " unsaved" : ""}`}
+          style={{ paddingLeft: indent }}
+          onClick={() => selectDoc(doc)}>
+          <div className="doc-item-dot" />
+          <div className="doc-item-name" title={doc.title}>{doc.title}</div>
+          <button className="btn-del" title="Eliminar"
+            onClick={e => { e.stopPropagation(); deleteDoc(doc.id); }}>×</button>
+        </div>
+      );
+    }
+    return result;
+  };
+
   if (!loaded) return null;
 
   return (
@@ -882,26 +1005,39 @@ export default function App() {
             </div>
           )}
           <div className="doc-list">
-            {docs.length === 0 && (
-              <div style={{ padding: "16px", color: "#444", fontSize: "11px", textAlign: "center" }}>
-                Sin documentos
-              </div>
-            )}
-            {docs.map(doc => (
-              <div
-                key={doc.id}
-                className={`doc-item${activeId === doc.id ? " active" : ""}${activeId === doc.id && unsaved ? " unsaved" : ""}`}
-                onClick={() => selectDoc(doc)}
-              >
-                <div className="doc-item-dot" />
-                <div className="doc-item-name" title={doc.title}>{doc.title}</div>
-                <button
-                  className="btn-del"
-                  title="Eliminar"
-                  onClick={e => { e.stopPropagation(); deleteDoc(doc.id); }}
-                >×</button>
-              </div>
-            ))}
+            {(() => {
+              const dirDocs = docs.filter(d => d.fileHandle);
+              const localDocs = docs.filter(d => !d.fileHandle);
+              const isEmpty = docs.length === 0;
+              return (
+                <>
+                  {isEmpty && (
+                    <div style={{ padding: "16px", color: "#444", fontSize: "11px", textAlign: "center" }}>
+                      Sin documentos
+                    </div>
+                  )}
+                  {dirDocs.length > 0 && renderFolderNode(buildTree(dirDocs), 0)}
+                  {localDocs.length > 0 && dirDocs.length > 0 && (
+                    <div className="local-separator">local</div>
+                  )}
+                  {localDocs.map(doc => (
+                    <div
+                      key={doc.id}
+                      className={`doc-item${activeId === doc.id ? " active" : ""}${activeId === doc.id && unsaved ? " unsaved" : ""}`}
+                      onClick={() => selectDoc(doc)}
+                    >
+                      <div className="doc-item-dot" />
+                      <div className="doc-item-name" title={doc.title}>{doc.title}</div>
+                      <button
+                        className="btn-del"
+                        title="Eliminar"
+                        onClick={e => { e.stopPropagation(); deleteDoc(doc.id); }}
+                      >×</button>
+                    </div>
+                  ))}
+                </>
+              );
+            })()}
           </div>
         </aside>
 
@@ -913,7 +1049,12 @@ export default function App() {
             </button>
             <div className="doc-title-display">
               {activeDoc
-                ? <span>{activeDoc.title}</span>
+                ? <span>
+                    {activeDoc.path && activeDoc.path.length > 0 && (
+                      <span style={{ color: "#555" }}>{activeDoc.path.join(" / ")} / </span>
+                    )}
+                    {activeDoc.title}
+                  </span>
                 : <span style={{color:"#333"}}>ningún documento</span>}
             </div>
             {installPrompt && (
