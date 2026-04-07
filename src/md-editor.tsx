@@ -402,6 +402,24 @@ const css = `
     border-top: 1px solid #333;
     margin: 1.2em 0;
   }
+  .preview-pane table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: .8em 0;
+    font-size: .95em;
+  }
+  .preview-pane th, .preview-pane td {
+    border: 1px solid #2d333b;
+    padding: 6px 14px;
+    text-align: left;
+  }
+  .preview-pane th {
+    background: #161b22;
+    color: #e6edf3;
+    font-weight: 700;
+  }
+  .preview-pane tr:nth-child(even) td { background: #111519; }
+  .preview-pane tr:hover td { background: #1c2128; }
 
   /* EMPTY STATE */
   .empty-state {
@@ -546,6 +564,24 @@ function renderMarkdown(md: string): string {
 
     // hr
     if (/^(---|\*\*\*|___)\s*$/.test(line)) { html.push("<hr>"); i++; continue; }
+
+    // table
+    if (/^\|/.test(line) && i + 1 < lines.length && /^\|[\s\-:|]+\|/.test(lines[i + 1])) {
+      const tableLines: string[] = [];
+      while (i < lines.length && /^\|/.test(lines[i])) {
+        tableLines.push(lines[i]); i++;
+      }
+      const parseRow = (row: string) =>
+        row.split("|").slice(1, -1).map(cell => cell.trim());
+      const headers = parseRow(tableLines[0]);
+      const rows = tableLines.slice(2); // skip separator row
+      const thead = `<thead><tr>${headers.map(h => `<th>${inline(h)}</th>`).join("")}</tr></thead>`;
+      const tbody = rows.length
+        ? `<tbody>${rows.map(r => `<tr>${parseRow(r).map(c => `<td>${inline(c)}</td>`).join("")}</tr>`).join("")}</tbody>`
+        : "";
+      html.push(`<table>${thead}${tbody}</table>`);
+      continue;
+    }
 
     // blockquote
     if (/^>\s?/.test(line)) {
