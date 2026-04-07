@@ -736,7 +736,16 @@ export default function App() {
     if (!activeDoc || !unsaved) return;
     if (activeDoc.fileHandle) {
       try {
-        const writable = await activeDoc.fileHandle.createWritable();
+        const handle = activeDoc.fileHandle as FileSystemFileHandle & {
+          queryPermission(desc: { mode: string }): Promise<PermissionState>;
+          requestPermission(desc: { mode: string }): Promise<PermissionState>;
+        };
+        let perm = await handle.queryPermission({ mode: "readwrite" });
+        if (perm !== "granted") {
+          perm = await handle.requestPermission({ mode: "readwrite" });
+        }
+        if (perm !== "granted") return;
+        const writable = await handle.createWritable();
         await writable.write(draftContent);
         await writable.close();
       } catch {
