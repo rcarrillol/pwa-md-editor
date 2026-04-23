@@ -1,13 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useRegisterSW } from "virtual:pwa-register/react";
 
 const STORAGE_KEY = "md-editor-docs";
+const APP_VERSION = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "dev";
+const BUILD_DATE = typeof __BUILD_DATE__ !== "undefined" ? __BUILD_DATE__ : "";
 
 const css = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body, #root { height: 100%; }
 
-  .app {
+  .app-root {
     display: flex;
+    flex-direction: column;
     height: 100vh;
     height: 100dvh;
     background: #141414;
@@ -15,6 +19,96 @@ const css = `
     font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
     font-size: 13px;
     overflow: hidden;
+  }
+
+  .app {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* UPDATE BANNER */
+  .update-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: linear-gradient(90deg, #0d1a0f, #161b22);
+    border-bottom: 1px solid #3fb95055;
+    color: #c9d1d9;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .update-banner-icon {
+    color: #3fb950;
+    font-size: 14px;
+    animation: pulse-icon 1.6s infinite;
+  }
+  @keyframes pulse-icon {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: .45; }
+  }
+  .update-banner-text { flex: 1; }
+  .update-banner-text strong { color: #3fb950; font-weight: 600; }
+  .btn-update {
+    background: #3fb95022;
+    border: 1px solid #3fb950;
+    color: #3fb950;
+    padding: 5px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: .5px;
+    transition: all .15s;
+    min-height: 30px;
+  }
+  .btn-update:hover { background: #3fb95044; }
+  .btn-update-dismiss {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    color: #8b949e;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+    min-width: 30px; min-height: 30px;
+    line-height: 1;
+  }
+  .btn-update-dismiss:hover { color: #c9d1d9; border-color: #3a3a3a; }
+
+  /* SIDEBAR FOOTER (version tag) */
+  .sidebar-footer {
+    padding: 8px 14px;
+    border-top: 1px solid #222;
+    background: #141414;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    min-height: 34px;
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+  .version-tag {
+    color: #6e7681;
+    text-transform: lowercase;
+  }
+  .version-tag.has-update {
+    color: #3fb950;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .version-tag.has-update:hover { color: #5fd36e; }
+  .version-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #3fb950;
+    box-shadow: 0 0 6px #3fb95088;
   }
 
   /* SIDEBAR */
@@ -808,6 +902,19 @@ export default function App() {
   const modalInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // PWA update lifecycle
+  const {
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegisteredSW(_url, reg) {
+      if (!reg) return;
+      const INTERVAL = 30 * 60 * 1000;
+      window.setInterval(() => { void reg.update(); }, INTERVAL);
+      window.addEventListener("focus", () => { void reg.update(); });
+    },
+  });
+
   // Load from localStorage
   useEffect(() => {
     try {
@@ -1220,7 +1327,27 @@ export default function App() {
   return (
     <>
       <style>{css}</style>
-      <div className="app">
+      <div className="app-root">
+        {needRefresh && (
+          <div className="update-banner">
+            <span className="update-banner-icon">⚡</span>
+            <span className="update-banner-text">
+              hay una <strong>nueva versión</strong> disponible
+            </span>
+            <button
+              className="btn-update"
+              onClick={() => { void updateServiceWorker(true); }}
+            >
+              actualizar
+            </button>
+            <button
+              className="btn-update-dismiss"
+              onClick={() => setNeedRefresh(false)}
+              title="Descartar"
+            >✕</button>
+          </div>
+        )}
+        <div className="app">
         {/* mobile backdrop */}
         {sidebarOpen && (
           <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
@@ -1340,6 +1467,25 @@ export default function App() {
                 </>
               );
             })()}
+          </div>
+          <div className="sidebar-footer">
+            {needRefresh ? (
+              <span
+                className="version-tag has-update"
+                onClick={() => { void updateServiceWorker(true); }}
+                title="Hay una nueva versión — haz click para actualizar"
+              >
+                <span className="version-dot" />
+                v{APP_VERSION} → actualizar
+              </span>
+            ) : (
+              <span
+                className="version-tag"
+                title={BUILD_DATE ? `Build ${BUILD_DATE}` : undefined}
+              >
+                v{APP_VERSION}
+              </span>
+            )}
           </div>
         </aside>
 
@@ -1467,6 +1613,7 @@ export default function App() {
             </div>
           );
         })()}
+        </div>
       </div>
     </>
   );
