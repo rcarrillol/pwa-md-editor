@@ -220,6 +220,27 @@ const css = `
   @media (hover: none) { .btn-del { opacity: 0.5; } }
   .btn-del:hover { color: #f85149; background: #f8514922; }
 
+  /* row actions (rename / new file / new folder) */
+  .btn-row-act {
+    background: none; border: none;
+    color: #555; cursor: pointer;
+    font-size: 13px; padding: 2px 5px;
+    border-radius: 3px;
+    transition: all .1s; font-family: inherit;
+    opacity: 0;
+    min-width: 26px; min-height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .doc-item:hover .btn-row-act,
+  .folder-row:hover .btn-row-act,
+  .dir-label:hover .btn-row-act { opacity: 1; }
+  @media (hover: none) { .btn-row-act { opacity: 0.55; } }
+  .btn-row-act:hover { color: #58a6ff; background: #58a6ff22; }
+  .dir-label .btn-row-act { color: #3fb95088; }
+  .dir-label .btn-row-act:hover { color: #3fb950; background: #3fb95022; }
+
   /* MAIN */
   .main {
     flex: 1;
@@ -705,6 +726,36 @@ function groupByFolder(docs: Doc[], depth = 0): FileTreeItem[] {
   return result;
 }
 
+function mergeEmptyFolders(tree: FileTreeItem[], emptyPaths: Iterable<string>): FileTreeItem[] {
+  const insert = (segs: string[], nodes: FileTreeItem[], depth: number) => {
+    if (depth >= segs.length) return;
+    const name = segs[depth];
+    let folder = nodes.find(
+      n => "type" in n && n.type === "folder" && (n as FolderNode).name === name
+    ) as FolderNode | undefined;
+    if (!folder) {
+      folder = {
+        type: "folder",
+        name,
+        key: segs.slice(0, depth + 1).join("/"),
+        children: [],
+      };
+      // keep folders before files, alphabetical
+      const fileStart = nodes.findIndex(n => !("type" in n) || (n as FolderNode).type !== "folder");
+      const end = fileStart === -1 ? nodes.length : fileStart;
+      let pos = 0;
+      while (pos < end && (nodes[pos] as FolderNode).name.localeCompare(name) < 0) pos++;
+      nodes.splice(pos, 0, folder);
+    }
+    insert(segs, folder.children, depth + 1);
+  };
+  for (const p of emptyPaths) {
+    const segs = p.split("/").filter(Boolean);
+    if (segs.length) insert(segs, tree, 0);
+  }
+  return tree;
+}
+
 async function readDirRecursive(
   dirHandle: FileSystemDirectoryHandle,
   path: string[] = []
@@ -728,6 +779,13 @@ async function readDirRecursive(
   return results;
 }
 
+// ── Modal types ───────────────────────────────────────────────────────────
+type ModalKind =
+  | { kind: "new-local" }
+  | { kind: "new-fs-file"; path: string[] }
+  | { kind: "new-fs-folder"; path: string[] }
+  | { kind: "rename-file"; docId: string };
+
 // ── Main component ─────────────────────────────────────────────────────────
 export default function App() {
   const [docs, setDocs] = useState<Doc[]>([]);
@@ -735,12 +793,14 @@ export default function App() {
   const [draftContent, setDraftContent] = useState("");
   const [mode, setMode] = useState<"edit" | "view" | "split">("split");
   const [unsaved, setUnsaved] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newContent, setNewContent] = useState("");
+  const [modalKind, setModalKind] = useState<ModalKind | null>(null);
+  const [modalInput, setModalInput] = useState("");
+  const [modalContent, setModalContent] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dirName, setDirName] = useState<string | null>(null);
+  const [rootDirHandle, setRootDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [emptyFolders, setEmptyFolders] = useState<Set<string>>(new Set());
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
   const [installPrompt, setInstallPrompt] = useState<Event & { prompt(): Promise<void> } | null>(null);
   const modalInputRef = useRef<HTMLInputElement>(null);
@@ -841,7 +901,7 @@ export default function App() {
     persist(next);
   };
 
-  const deleteDoc = (id: string) => {
+  const removeDocFromState = (id: string) => {
     const next = docs.filter(d => d.id !== id);
     setDocs(next);
     if (activeId === id) {
@@ -851,6 +911,146 @@ export default function App() {
       setUnsaved(false);
     }
     persist(next);
+  };
+
+  const deleteDoc = async (id: string) => {
+    const doc = docs.find(d => d.id === id);
+    if (!doc) return;
+    if (doc.fileHandle) {
+      if (!window.confirm(`Borrar "${doc.title}" del disco?`)) return;
+      try {
+        const parent = await getDirHandleByPath(doc.path ?? []);
+        await parent.removeEntry(doc.fileHandle.name);
+      } catch (e) {
+        alert("No se pudo borrar: " + (e as Error).message);
+        return;
+      }
+    }
+    removeDocFromState(id);
+  };
+
+  const getDirHandleByPath = async (path: string[]): Promise<FileSystemDirectoryHandle> => {
+    if (!rootDirHandle) throw new Error("No hay directorio anclado");
+    let handle = rootDirHandle;
+    for (const seg of path) {
+      handle = await handle.getDirectoryHandle(seg);
+    }
+    return handle;
+  };
+
+  const ensureFsPermission = async () => {
+    if (!rootDirHandle) return false;
+    const h = rootDirHandle as FileSystemDirectoryHandle & {
+      queryPermission(desc: { mode: string }): Promise<PermissionState>;
+      requestPermission(desc: { mode: string }): Promise<PermissionState>;
+    };
+    let perm = await h.queryPermission({ mode: "readwrite" });
+    if (perm !== "granted") perm = await h.requestPermission({ mode: "readwrite" });
+    return perm === "granted";
+  };
+
+  const entryExists = async (
+    parent: FileSystemDirectoryHandle,
+    name: string
+  ): Promise<"file" | "dir" | null> => {
+    try { await parent.getFileHandle(name); return "file"; } catch { /* ignore */ }
+    try { await parent.getDirectoryHandle(name); return "dir"; } catch { /* ignore */ }
+    return null;
+  };
+
+  const createFsFile = async (path: string[], rawName: string, content: string) => {
+    if (!rootDirHandle) return;
+    const name = rawName.trim();
+    if (!name) return;
+    if (!(await ensureFsPermission())) return;
+    const fileName = /\.(md|markdown|txt)$/i.test(name) ? name : name + ".md";
+    try {
+      const parent = await getDirHandleByPath(path);
+      if (await entryExists(parent, fileName)) {
+        alert(`Ya existe "${fileName}" en esta carpeta.`);
+        return;
+      }
+      const handle = await parent.getFileHandle(fileName, { create: true });
+      const writable = await handle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      const title = fileName.replace(/\.(md|markdown|txt)$/i, "");
+      const doc: Doc = { id: uid(), title, content, fileHandle: handle, path };
+      setDocs(prev => [doc, ...prev]);
+      setActiveId(doc.id);
+      setDraftContent(content);
+      setUnsaved(false);
+      setSidebarOpen(false);
+      const key = path.join("/");
+      if (key) {
+        setEmptyFolders(prev => {
+          if (!prev.has(key)) return prev;
+          const next = new Set(prev);
+          next.delete(key);
+          return next;
+        });
+      }
+    } catch (e) {
+      alert("No se pudo crear el archivo: " + (e as Error).message);
+    }
+  };
+
+  const createFsFolder = async (path: string[], rawName: string) => {
+    if (!rootDirHandle) return;
+    const name = rawName.trim();
+    if (!name) return;
+    if (!(await ensureFsPermission())) return;
+    try {
+      const parent = await getDirHandleByPath(path);
+      if (await entryExists(parent, name)) {
+        alert(`Ya existe "${name}" en esta carpeta.`);
+        return;
+      }
+      await parent.getDirectoryHandle(name, { create: true });
+      const key = [...path, name].join("/");
+      setEmptyFolders(prev => new Set(prev).add(key));
+      // expand parent so the new folder is visible
+      setCollapsedFolders(prev => {
+        const pk = path.join("/");
+        if (!pk || !prev.has(pk)) return prev;
+        const n = new Set(prev);
+        n.delete(pk);
+        return n;
+      });
+    } catch (e) {
+      alert("No se pudo crear la carpeta: " + (e as Error).message);
+    }
+  };
+
+  const renameFsFile = async (doc: Doc, rawName: string) => {
+    if (!rootDirHandle || !doc.fileHandle) return;
+    const name = rawName.trim();
+    if (!name) return;
+    const oldName = doc.fileHandle.name;
+    const origExt = oldName.match(/\.(md|markdown|txt)$/i)?.[0] ?? ".md";
+    const fileName = /\.(md|markdown|txt)$/i.test(name) ? name : name + origExt;
+    if (fileName === oldName) return;
+    if (!(await ensureFsPermission())) return;
+    try {
+      const parent = await getDirHandleByPath(doc.path ?? []);
+      if (await entryExists(parent, fileName)) {
+        alert(`Ya existe "${fileName}" en esta carpeta.`);
+        return;
+      }
+      const liveContent = activeId === doc.id ? draftContent : doc.content;
+      const newHandle = await parent.getFileHandle(fileName, { create: true });
+      const writable = await newHandle.createWritable();
+      await writable.write(liveContent);
+      await writable.close();
+      await parent.removeEntry(oldName);
+      const title = fileName.replace(/\.(md|markdown|txt)$/i, "");
+      setDocs(prev => prev.map(d =>
+        d.id === doc.id ? { ...d, title, content: liveContent, fileHandle: newHandle } : d
+      ));
+      if (activeId === doc.id) setUnsaved(false);
+    } catch (e) {
+      alert("No se pudo renombrar: " + (e as Error).message);
+    }
   };
 
   const openDirectory = async () => {
@@ -873,6 +1073,8 @@ export default function App() {
       setCollapsedFolders(new Set());
 
       setDirName(dirHandle.name);
+      setRootDirHandle(dirHandle);
+      setEmptyFolders(new Set());
       setDocs(prev => {
         // reemplaza los docs anteriores del directorio, conserva los locales
         const local = prev.filter(d => !d.fileHandle);
@@ -891,6 +1093,8 @@ export default function App() {
 
   const unpinDirectory = () => {
     setDirName(null);
+    setRootDirHandle(null);
+    setEmptyFolders(new Set());
     setDocs(prev => {
       const local = prev.filter(d => !d.fileHandle);
       // si el doc activo era del directorio, seleccionar el primero local
@@ -937,23 +1141,53 @@ export default function App() {
     e.target.value = "";
   };
 
-  const openModal = () => {
-    setNewTitle(""); setNewContent(""); setShowModal(true);
-    setTimeout(() => modalInputRef.current?.focus(), 50);
+  const openModal = (kind: ModalKind) => {
+    setModalKind(kind);
+    if (kind.kind === "rename-file") {
+      const d = docs.find(x => x.id === kind.docId);
+      setModalInput(d?.title ?? "");
+      setModalContent("");
+    } else {
+      setModalInput("");
+      setModalContent("");
+    }
+    setTimeout(() => {
+      const el = modalInputRef.current;
+      if (!el) return;
+      el.focus();
+      if (kind.kind === "rename-file") el.select();
+    }, 50);
   };
-  const closeModal = () => setShowModal(false);
+  const closeModal = () => setModalKind(null);
 
-  const createDoc = () => {
-    const title = newTitle.trim() || "Sin título";
-    const doc: Doc = { id: uid(), title, content: newContent };
+  const createLocalDoc = () => {
+    const title = modalInput.trim() || "Sin título";
+    const doc: Doc = { id: uid(), title, content: modalContent };
     const next = [doc, ...docs];
     setDocs(next);
     setActiveId(doc.id);
     setDraftContent(doc.content);
     setUnsaved(false);
-    setShowModal(false);
     setSidebarOpen(false);
     persist(next);
+  };
+
+  const confirmModal = async () => {
+    if (!modalKind) return;
+    if (modalKind.kind === "new-local") {
+      createLocalDoc();
+    } else if (modalKind.kind === "new-fs-file") {
+      if (!modalInput.trim()) return;
+      await createFsFile(modalKind.path, modalInput, modalContent);
+    } else if (modalKind.kind === "new-fs-folder") {
+      if (!modalInput.trim()) return;
+      await createFsFolder(modalKind.path, modalInput);
+    } else if (modalKind.kind === "rename-file") {
+      if (!modalInput.trim()) return;
+      const d = docs.find(x => x.id === modalKind.docId);
+      if (d) await renameFsFile(d, modalInput);
+    }
+    setModalKind(null);
   };
 
   // Captura el prompt de instalación PWA
@@ -997,7 +1231,7 @@ export default function App() {
             <span className="sidebar-title">docs</span>
             <button className="btn-dir" onClick={openDirectory} title="Anclar directorio">⊞</button>
             <button className="btn-open" onClick={() => fileInputRef.current?.click()} title="Abrir archivo .md">↑</button>
-            <button className="btn-new" onClick={openModal} title="Nuevo documento">＋</button>
+            <button className="btn-new" onClick={() => openModal({ kind: "new-local" })} title="Nuevo documento local">＋</button>
             <input
               ref={fileInputRef}
               type="file"
@@ -1011,6 +1245,16 @@ export default function App() {
             <div className="dir-label">
               <span>⌂</span>
               <span className="dir-label-name" title={dirName}>{dirName}</span>
+              <button
+                className="btn-row-act"
+                onClick={() => openModal({ kind: "new-fs-file", path: [] })}
+                title="Nuevo archivo en la raíz"
+              >＋</button>
+              <button
+                className="btn-row-act"
+                onClick={() => openModal({ kind: "new-fs-folder", path: [] })}
+                title="Nueva carpeta en la raíz"
+              >⊟</button>
               <button className="btn-unpin" onClick={unpinDirectory} title="Desanclar directorio">✕</button>
             </div>
           )}
@@ -1033,10 +1277,17 @@ export default function App() {
                 >
                   <div className="doc-item-dot" />
                   <div className="doc-item-name" title={doc.title}>{doc.title}</div>
+                  {doc.fileHandle && (
+                    <button
+                      className="btn-row-act"
+                      title="Renombrar"
+                      onClick={e => { e.stopPropagation(); openModal({ kind: "rename-file", docId: doc.id }); }}
+                    >✎</button>
+                  )}
                   <button
                     className="btn-del"
                     title="Eliminar"
-                    onClick={e => { e.stopPropagation(); deleteDoc(doc.id); }}
+                    onClick={e => { e.stopPropagation(); void deleteDoc(doc.id); }}
                   >×</button>
                 </div>
               );
@@ -1045,6 +1296,7 @@ export default function App() {
                 items.map(item => {
                   if ("type" in item && item.type === "folder") {
                     const collapsed = collapsedFolders.has(item.key);
+                    const segs = item.key.split("/").filter(Boolean);
                     return (
                       <div key={item.key} className="tree-section">
                         <div
@@ -1055,6 +1307,16 @@ export default function App() {
                           <span className="folder-chevron">{collapsed ? "▶" : "▼"}</span>
                           <span className="folder-icon">{collapsed ? "📁" : "📂"}</span>
                           <span className="folder-name">{item.name}</span>
+                          <button
+                            className="btn-row-act"
+                            title="Nuevo archivo aquí"
+                            onClick={e => { e.stopPropagation(); openModal({ kind: "new-fs-file", path: segs }); }}
+                          >＋</button>
+                          <button
+                            className="btn-row-act"
+                            title="Nueva subcarpeta"
+                            onClick={e => { e.stopPropagation(); openModal({ kind: "new-fs-folder", path: segs }); }}
+                          >⊟</button>
                         </div>
                         {!collapsed && renderTree(item.children, depth + 1)}
                       </div>
@@ -1063,10 +1325,13 @@ export default function App() {
                   return renderDocItem(item as Doc, depth);
                 });
 
+              const showFsTree = dirName !== null;
+              const fsTree = showFsTree ? mergeEmptyFolders(groupByFolder(dirDocs), emptyFolders) : [];
+
               return (
                 <>
-                  {dirDocs.length > 0 && renderTree(groupByFolder(dirDocs))}
-                  {dirDocs.length > 0 && localDocs.length > 0 && (
+                  {showFsTree && renderTree(fsTree)}
+                  {showFsTree && localDocs.length > 0 && (
                     <div style={{ height: "1px", background: "#1e1e1e", margin: "4px 0" }} />
                   )}
                   {localDocs.map(doc => renderDocItem(doc, 0))}
@@ -1144,37 +1409,62 @@ export default function App() {
         </div>
 
         {/* MODAL */}
-        {showModal && (
-          <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closeModal()}>
-            <div className="modal">
-              <div className="modal-title">nuevo documento</div>
-              <div className="modal-field">
-                <label className="modal-label">título</label>
-                <input
-                  ref={modalInputRef}
-                  className="modal-input"
-                  value={newTitle}
-                  onChange={e => setNewTitle(e.target.value)}
-                  placeholder="Mi documento"
-                  onKeyDown={e => e.key === "Enter" && createDoc()}
-                />
-              </div>
-              <div className="modal-field">
-                <label className="modal-label">contenido inicial (opcional)</label>
-                <textarea
-                  className="modal-textarea"
-                  value={newContent}
-                  onChange={e => setNewContent(e.target.value)}
-                  placeholder={"# Título\n\nContenido..."}
-                />
-              </div>
-              <div className="modal-actions">
-                <button className="btn-cancel" onClick={closeModal}>cancelar</button>
-                <button className="btn-confirm" onClick={createDoc}>crear</button>
+        {modalKind && (() => {
+          const k = modalKind.kind;
+          const pathStr =
+            (k === "new-fs-file" || k === "new-fs-folder")
+              ? (modalKind.path.length ? modalKind.path.join("/") : (dirName ?? "raíz"))
+              : "";
+          const title =
+            k === "new-local" ? "nuevo documento"
+            : k === "new-fs-file" ? `nuevo archivo en ${pathStr}`
+            : k === "new-fs-folder" ? `nueva carpeta en ${pathStr}`
+            : "renombrar archivo";
+          const inputLabel =
+            k === "new-fs-folder" ? "nombre de la carpeta"
+            : k === "rename-file" ? "nuevo nombre"
+            : "título";
+          const inputPlaceholder =
+            k === "new-fs-folder" ? "mi-carpeta"
+            : k === "new-fs-file" ? "mi-archivo"
+            : k === "rename-file" ? "nuevo-nombre"
+            : "Mi documento";
+          const showContent = k === "new-local" || k === "new-fs-file";
+          const confirmLabel = k === "rename-file" ? "renombrar" : "crear";
+          return (
+            <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closeModal()}>
+              <div className="modal">
+                <div className="modal-title">{title}</div>
+                <div className="modal-field">
+                  <label className="modal-label">{inputLabel}</label>
+                  <input
+                    ref={modalInputRef}
+                    className="modal-input"
+                    value={modalInput}
+                    onChange={e => setModalInput(e.target.value)}
+                    placeholder={inputPlaceholder}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); void confirmModal(); } }}
+                  />
+                </div>
+                {showContent && (
+                  <div className="modal-field">
+                    <label className="modal-label">contenido inicial (opcional)</label>
+                    <textarea
+                      className="modal-textarea"
+                      value={modalContent}
+                      onChange={e => setModalContent(e.target.value)}
+                      placeholder={"# Título\n\nContenido..."}
+                    />
+                  </div>
+                )}
+                <div className="modal-actions">
+                  <button className="btn-cancel" onClick={closeModal}>cancelar</button>
+                  <button className="btn-confirm" onClick={() => void confirmModal()}>{confirmLabel}</button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
     </>
   );
