@@ -10,7 +10,7 @@ const css = `
     display: flex;
     height: 100vh;
     height: 100dvh;
-    background: #0d0d0d;
+    background: #141414;
     color: #c9d1d9;
     font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
     font-size: 13px;
@@ -21,7 +21,7 @@ const css = `
   .sidebar {
     width: 220px;
     min-width: 220px;
-    background: #111;
+    background: #181818;
     border-right: 1px solid #222;
     display: flex;
     flex-direction: column;
@@ -35,7 +35,7 @@ const css = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #0d0d0d;
+    background: #141414;
     flex-shrink: 0;
   }
   .sidebar-title {
@@ -46,8 +46,8 @@ const css = `
     font-weight: 700;
   }
   .btn-new {
-    background: #1a1a1a;
-    border: 1px solid #333;
+    background: #222;
+    border: 1px solid #3a3a3a;
     color: #58a6ff;
     cursor: pointer;
     padding: 4px 8px;
@@ -59,8 +59,8 @@ const css = `
   }
   .btn-new:hover { background: #58a6ff22; border-color: #58a6ff; }
   .btn-open {
-    background: #1a1a1a;
-    border: 1px solid #333;
+    background: #222;
+    border: 1px solid #3a3a3a;
     color: #8b949e;
     cursor: pointer;
     padding: 4px 8px;
@@ -72,8 +72,8 @@ const css = `
   }
   .btn-open:hover { background: #8b949e22; border-color: #8b949e; color: #c9d1d9; }
   .btn-dir {
-    background: #1a1a1a;
-    border: 1px solid #333;
+    background: #222;
+    border: 1px solid #3a3a3a;
     color: #3fb950;
     cursor: pointer;
     padding: 4px 8px;
@@ -107,13 +107,15 @@ const css = `
   }
   .btn-unpin {
     background: none; border: none;
-    color: #3fb95066; cursor: pointer;
-    font-size: 14px; padding: 0 2px;
+    color: #3fb950bb; cursor: pointer;
+    font-size: 14px; padding: 0 4px;
     border-radius: 3px; font-family: inherit;
-    transition: color .15s;
+    transition: all .15s;
     flex-shrink: 0;
+    min-width: 24px; min-height: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
   }
-  .btn-unpin:hover { color: #f85149; }
+  .btn-unpin:hover { color: #f85149; background: #f8514922; }
 
   /* FOLDER TREE */
   .folder-row {
@@ -128,7 +130,7 @@ const css = `
   }
   .folder-row:hover { background: #1a1a1a; }
   .folder-chevron {
-    color: #555;
+    color: #7d8590;
     font-size: 9px;
     width: 10px;
     flex-shrink: 0;
@@ -137,7 +139,7 @@ const css = `
   }
   .folder-icon { color: #e3b341; font-size: 12px; flex-shrink: 0; }
   .folder-name {
-    color: #8b949e;
+    color: #c9d1d9;
     font-size: 11px;
     letter-spacing: .5px;
     flex: 1;
@@ -145,20 +147,20 @@ const css = `
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .folder-row:hover .folder-name { color: #c9d1d9; }
+  .folder-row:hover .folder-name { color: #e6edf3; }
   .tree-section { margin-bottom: 4px; }
 
   .btn-close-sidebar {
     display: none;
-    background: none; border: none;
-    color: #555; cursor: pointer;
-    font-size: 18px; padding: 4px 6px;
+    background: #1a1a1a; border: 1px solid #2a2a2a;
+    color: #c9d1d9; cursor: pointer;
+    font-size: 16px; padding: 4px 6px;
     border-radius: 4px; font-family: inherit;
     min-width: 32px; min-height: 32px;
     align-items: center; justify-content: center;
     transition: all .15s;
   }
-  .btn-close-sidebar:hover { color: #c9d1d9; background: #1a1a1a; }
+  .btn-close-sidebar:hover { color: #f85149; border-color: #f8514955; background: #f8514922; }
   @media (max-width: 600px) { .btn-close-sidebar { display: flex; } }
 
   .doc-list {
@@ -206,28 +208,28 @@ const css = `
   }
   .doc-item.unsaved .doc-item-dot { opacity: 1; }
   .btn-del {
-    background: none; border: none;
-    color: #444; cursor: pointer;
-    font-size: 18px; padding: 4px 6px;
-    border-radius: 3px;
+    background: #1a1a1a; border: 1px solid #2a2a2a;
+    color: #8b949e; cursor: pointer;
+    font-size: 16px; padding: 2px 6px;
+    border-radius: 4px;
     transition: all .1s; font-family: inherit;
-    /* always visible on touch devices */
-    opacity: 0;
-    min-width: 32px; min-height: 32px;
+    opacity: .55;
+    min-width: 28px; min-height: 28px;
     display: flex; align-items: center; justify-content: center;
+    line-height: 1;
   }
   .doc-item:hover .btn-del { opacity: 1; }
-  @media (hover: none) { .btn-del { opacity: 0.5; } }
-  .btn-del:hover { color: #f85149; background: #f8514922; }
+  @media (hover: none) { .btn-del { opacity: .8; } }
+  .btn-del:hover { color: #f85149; background: #f8514922; border-color: #f8514955; }
 
   /* row actions (rename / new file / new folder) */
   .btn-row-act {
-    background: none; border: none;
-    color: #555; cursor: pointer;
+    background: #1a1a1a; border: 1px solid #2a2a2a;
+    color: #b1bac4; cursor: pointer;
     font-size: 13px; padding: 2px 5px;
-    border-radius: 3px;
+    border-radius: 4px;
     transition: all .1s; font-family: inherit;
-    opacity: 0;
+    opacity: .65;
     min-width: 26px; min-height: 28px;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
@@ -236,10 +238,10 @@ const css = `
   .doc-item:hover .btn-row-act,
   .folder-row:hover .btn-row-act,
   .dir-label:hover .btn-row-act { opacity: 1; }
-  @media (hover: none) { .btn-row-act { opacity: 0.55; } }
-  .btn-row-act:hover { color: #58a6ff; background: #58a6ff22; }
-  .dir-label .btn-row-act { color: #3fb95088; }
-  .dir-label .btn-row-act:hover { color: #3fb950; background: #3fb95022; }
+  @media (hover: none) { .btn-row-act { opacity: .85; } }
+  .btn-row-act:hover { color: #58a6ff; background: #58a6ff22; border-color: #58a6ff77; }
+  .dir-label .btn-row-act { color: #3fb950cc; border-color: #1a2e1a; background: #0d1a0f; }
+  .dir-label .btn-row-act:hover { color: #3fb950; background: #3fb95022; border-color: #3fb95077; }
 
   /* MAIN */
   .main {
@@ -252,7 +254,7 @@ const css = `
 
   .toolbar {
     padding: 8px 14px;
-    background: #0d0d0d;
+    background: #141414;
     border-bottom: 1px solid #222;
     display: flex;
     align-items: center;
@@ -323,8 +325,8 @@ const css = `
   .btn-mode.active { background: #58a6ff22; color: #58a6ff; }
 
   .btn-save {
-    background: #1a1a1a;
-    border: 1px solid #333;
+    background: #222;
+    border: 1px solid #3a3a3a;
     color: #3fb950;
     cursor: pointer;
     padding: 5px 12px;
@@ -363,15 +365,15 @@ const css = `
     font-size: 10px;
     letter-spacing: 2px;
     text-transform: uppercase;
-    color: #444;
-    background: #0f0f0f;
-    border-bottom: 1px solid #1a1a1a;
+    color: #6e7681;
+    background: #1a1a1a;
+    border-bottom: 1px solid #222;
     flex-shrink: 0;
   }
 
   .editor-textarea {
     flex: 1;
-    background: #0d0d0d;
+    background: #141414;
     color: #c9d1d9;
     border: none;
     outline: none;
@@ -398,7 +400,7 @@ const css = `
     flex: 1;
     padding: 20px 28px;
     overflow-y: auto;
-    background: #0d0d0d;
+    background: #141414;
     line-height: 1.7;
     -webkit-overflow-scrolling: touch;
   }
@@ -483,7 +485,7 @@ const css = `
     justify-content: center;
     flex-direction: column;
     gap: 12px;
-    color: #444;
+    color: #6e7681;
   }
   .empty-state-icon { font-size: 36px; opacity: .4; }
   .empty-state-text { font-size: 12px; letter-spacing: 1px; }
@@ -498,7 +500,7 @@ const css = `
     padding: 16px;
   }
   .modal {
-    background: #111;
+    background: #181818;
     border: 1px solid #333;
     border-radius: 8px;
     padding: 24px;
@@ -517,7 +519,7 @@ const css = `
   .modal-field { display: flex; flex-direction: column; gap: 6px; }
   .modal-label { font-size: 10px; color: #8b949e; letter-spacing: 1px; text-transform: uppercase; }
   .modal-input, .modal-textarea {
-    background: #0d0d0d;
+    background: #141414;
     border: 1px solid #333;
     border-radius: 4px;
     color: #c9d1d9;
@@ -1260,7 +1262,7 @@ export default function App() {
           )}
           <div className="doc-list">
             {docs.length === 0 && (
-              <div style={{ padding: "16px", color: "#444", fontSize: "11px", textAlign: "center" }}>
+              <div style={{ padding: "16px", color: "#6e7681", fontSize: "11px", textAlign: "center" }}>
                 Sin documentos
               </div>
             )}
@@ -1350,7 +1352,7 @@ export default function App() {
             <div className="doc-title-display">
               {activeDoc
                 ? <span>{activeDoc.title}</span>
-                : <span style={{color:"#333"}}>ningún documento</span>}
+                : <span style={{color:"#6e7681"}}>ningún documento</span>}
             </div>
             {installPrompt && (
               <button
