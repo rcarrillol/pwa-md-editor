@@ -1,1620 +1,759 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useRegisterSW } from "virtual:pwa-register/react";
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { Icon } from './components/Icon'
+import { TreeNode } from './components/TreeNode'
+import { ContextMenu } from './components/ContextMenu'
+import type { ContextMenuState } from './components/ContextMenu'
+import { render as mdRender } from './lib/markdown'
+import {
+  loadState, saveState, uid,
+  addNode, removeNode, renameNode, updateContent, toggleFolder, moveNode, duplicateNode,
+  pathOf, flatFiles,
+} from './lib/tree-ops'
+import type { Tree, TreeNode as TNode, TreeFileNode, TreeFolderNode, ViewMode } from './lib/tree-ops'
+import { buildFsSubtree, fileListToNodes, saveFileToDisk } from './lib/fs-access'
 
-const STORAGE_KEY = "md-editor-docs";
-const APP_VERSION = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "dev";
-const BUILD_DATE = typeof __BUILD_DATE__ !== "undefined" ? __BUILD_DATE__ : "";
-
-const css = `
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body, #root { height: 100%; }
-
-  .app-root {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    height: 100dvh;
-    background: #141414;
-    color: #c9d1d9;
-    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-    font-size: 13px;
-    overflow: hidden;
-  }
-
-  .app {
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  /* UPDATE BANNER */
-  .update-banner {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 14px;
-    background: linear-gradient(90deg, #0d1a0f, #161b22);
-    border-bottom: 1px solid #3fb95055;
-    color: #c9d1d9;
-    font-size: 12px;
-    flex-shrink: 0;
-  }
-  .update-banner-icon {
-    color: #3fb950;
-    font-size: 14px;
-    animation: pulse-icon 1.6s infinite;
-  }
-  @keyframes pulse-icon {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: .45; }
-  }
-  .update-banner-text { flex: 1; }
-  .update-banner-text strong { color: #3fb950; font-weight: 600; }
-  .btn-update {
-    background: #3fb95022;
-    border: 1px solid #3fb950;
-    color: #3fb950;
-    padding: 5px 14px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 11px;
-    letter-spacing: .5px;
-    transition: all .15s;
-    min-height: 30px;
-  }
-  .btn-update:hover { background: #3fb95044; }
-  .btn-update-dismiss {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    color: #8b949e;
-    cursor: pointer;
-    font-size: 14px;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-family: inherit;
-    min-width: 30px; min-height: 30px;
-    line-height: 1;
-  }
-  .btn-update-dismiss:hover { color: #c9d1d9; border-color: #3a3a3a; }
-
-  /* SIDEBAR FOOTER (version tag) */
-  .sidebar-footer {
-    padding: 8px 14px;
-    border-top: 1px solid #222;
-    background: #141414;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-    min-height: 34px;
-    font-size: 10px;
-    letter-spacing: 1px;
-  }
-  .version-tag {
-    color: #6e7681;
-    text-transform: lowercase;
-  }
-  .version-tag.has-update {
-    color: #3fb950;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .version-tag.has-update:hover { color: #5fd36e; }
-  .version-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: #3fb950;
-    box-shadow: 0 0 6px #3fb95088;
-  }
-
-  /* SIDEBAR */
-  .sidebar {
-    width: 220px;
-    min-width: 220px;
-    background: #181818;
-    border-right: 1px solid #222;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    /* slide-in on mobile */
-    transition: transform .2s ease;
-  }
-  .sidebar-header {
-    padding: 12px 14px;
-    border-bottom: 1px solid #222;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: #141414;
-    flex-shrink: 0;
-  }
-  .sidebar-title {
-    color: #58a6ff;
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    font-weight: 700;
-  }
-  .btn-new {
-    background: #222;
-    border: 1px solid #3a3a3a;
-    color: #58a6ff;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 14px;
-    line-height: 1;
-    transition: all .15s;
-    font-family: inherit;
-  }
-  .btn-new:hover { background: #58a6ff22; border-color: #58a6ff; }
-  .btn-open {
-    background: #222;
-    border: 1px solid #3a3a3a;
-    color: #8b949e;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 14px;
-    line-height: 1;
-    transition: all .15s;
-    font-family: inherit;
-  }
-  .btn-open:hover { background: #8b949e22; border-color: #8b949e; color: #c9d1d9; }
-  .btn-dir {
-    background: #222;
-    border: 1px solid #3a3a3a;
-    color: #3fb950;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 13px;
-    line-height: 1;
-    transition: all .15s;
-    font-family: inherit;
-  }
-  .btn-dir:hover { background: #3fb95022; border-color: #3fb950; }
-
-  .dir-label {
-    padding: 5px 14px;
-    font-size: 10px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: #3fb950;
-    background: #0d1a0f;
-    border-bottom: 1px solid #1a2e1a;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-    min-height: 0;
-  }
-  .dir-label-name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .btn-unpin {
-    background: none; border: none;
-    color: #3fb950bb; cursor: pointer;
-    font-size: 14px; padding: 0 4px;
-    border-radius: 3px; font-family: inherit;
-    transition: all .15s;
-    flex-shrink: 0;
-    min-width: 24px; min-height: 24px;
-    display: inline-flex; align-items: center; justify-content: center;
-  }
-  .btn-unpin:hover { color: #f85149; background: #f8514922; }
-
-  /* FOLDER TREE */
-  .folder-row {
-    display: flex;
-    align-items: center;
-    padding: 5px 14px;
-    gap: 6px;
-    cursor: pointer;
-    min-height: 30px;
-    user-select: none;
-    transition: background .1s;
-  }
-  .folder-row:hover { background: #1a1a1a; }
-  .folder-chevron {
-    color: #7d8590;
-    font-size: 9px;
-    width: 10px;
-    flex-shrink: 0;
-    display: inline-block;
-    transition: transform .15s;
-  }
-  .folder-icon { color: #e3b341; font-size: 12px; flex-shrink: 0; }
-  .folder-name {
-    color: #c9d1d9;
-    font-size: 11px;
-    letter-spacing: .5px;
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .folder-row:hover .folder-name { color: #e6edf3; }
-  .tree-section { margin-bottom: 4px; }
-
-  .btn-close-sidebar {
-    display: none;
-    background: #1a1a1a; border: 1px solid #2a2a2a;
-    color: #c9d1d9; cursor: pointer;
-    font-size: 16px; padding: 4px 6px;
-    border-radius: 4px; font-family: inherit;
-    min-width: 32px; min-height: 32px;
-    align-items: center; justify-content: center;
-    transition: all .15s;
-  }
-  .btn-close-sidebar:hover { color: #f85149; border-color: #f8514955; background: #f8514922; }
-  @media (max-width: 600px) { .btn-close-sidebar { display: flex; } }
-
-  .doc-list {
-    flex: 1;
-    min-height: 0; /* flex + overflow-y: auto requiere esto para scrollear */
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 6px 0;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
-  .doc-list::-webkit-scrollbar { width: 4px; }
-  .doc-list::-webkit-scrollbar-track { background: transparent; }
-  .doc-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
-
-  .doc-item {
-    display: flex;
-    align-items: center;
-    padding: 10px 14px;
-    cursor: pointer;
-    gap: 8px;
-    border-left: 2px solid transparent;
-    transition: all .1s;
-    position: relative;
-    /* bigger tap target on mobile */
-    min-height: 44px;
-  }
-  .doc-item:hover { background: #1a1a1a; }
-  .doc-item.active { background: #161b22; border-left-color: #58a6ff; }
-  .doc-item-name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 12px;
-    color: #c9d1d9;
-  }
-  .doc-item.active .doc-item-name { color: #58a6ff; }
-  .doc-item-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: #f0883e;
-    flex-shrink: 0;
-    opacity: 0;
-  }
-  .doc-item.unsaved .doc-item-dot { opacity: 1; }
-  .btn-del {
-    background: #1a1a1a; border: 1px solid #2a2a2a;
-    color: #8b949e; cursor: pointer;
-    font-size: 16px; padding: 2px 6px;
-    border-radius: 4px;
-    transition: all .1s; font-family: inherit;
-    opacity: .55;
-    min-width: 28px; min-height: 28px;
-    display: flex; align-items: center; justify-content: center;
-    line-height: 1;
-  }
-  .doc-item:hover .btn-del { opacity: 1; }
-  @media (hover: none) { .btn-del { opacity: .8; } }
-  .btn-del:hover { color: #f85149; background: #f8514922; border-color: #f8514955; }
-
-  /* row actions (rename / new file / new folder) */
-  .btn-row-act {
-    background: #1a1a1a; border: 1px solid #2a2a2a;
-    color: #b1bac4; cursor: pointer;
-    font-size: 13px; padding: 2px 5px;
-    border-radius: 4px;
-    transition: all .1s; font-family: inherit;
-    opacity: .65;
-    min-width: 26px; min-height: 28px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    line-height: 1;
-  }
-  .doc-item:hover .btn-row-act,
-  .folder-row:hover .btn-row-act,
-  .dir-label:hover .btn-row-act { opacity: 1; }
-  @media (hover: none) { .btn-row-act { opacity: .85; } }
-  .btn-row-act:hover { color: #58a6ff; background: #58a6ff22; border-color: #58a6ff77; }
-  .dir-label .btn-row-act { color: #3fb950cc; border-color: #1a2e1a; background: #0d1a0f; }
-  .dir-label .btn-row-act:hover { color: #3fb950; background: #3fb95022; border-color: #3fb95077; }
-
-  /* MAIN */
-  .main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    min-width: 0;
-  }
-
-  .toolbar {
-    padding: 8px 14px;
-    background: #141414;
-    border-bottom: 1px solid #222;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-
-  /* hamburger — only on mobile */
-  .btn-menu {
-    display: none;
-    background: none; border: none;
-    color: #8b949e; cursor: pointer;
-    font-size: 18px; padding: 4px 6px;
-    border-radius: 4px; font-family: inherit;
-    min-width: 32px; min-height: 32px;
-    align-items: center; justify-content: center;
-  }
-  .btn-menu:hover { color: #c9d1d9; background: #1a1a1a; }
-  .btn-install {
-    background: #1a1a1a;
-    border: 1px solid #58a6ff66;
-    color: #58a6ff;
-    cursor: pointer;
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 11px;
-    font-family: inherit;
-    letter-spacing: .5px;
-    transition: all .15s;
-    display: flex; align-items: center; gap: 5px;
-    min-height: 32px;
-    animation: pulse-border 2s infinite;
-  }
-  .btn-install:hover { background: #58a6ff22; border-color: #58a6ff; }
-  @keyframes pulse-border {
-    0%, 100% { border-color: #58a6ff66; }
-    50%       { border-color: #58a6ffcc; }
-  }
-
-  .doc-title-display {
-    flex: 1;
-    font-size: 13px;
-    color: #8b949e;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .doc-title-display span { color: #c9d1d9; }
-
-  .mode-group {
-    display: flex;
-    background: #161616;
-    border: 1px solid #222;
-    border-radius: 5px;
-    overflow: hidden;
-  }
-  .btn-mode {
-    background: none; border: none;
-    color: #8b949e; cursor: pointer;
-    padding: 5px 10px;
-    font-size: 11px;
-    font-family: inherit;
-    letter-spacing: .5px;
-    transition: all .15s;
-    min-height: 32px;
-  }
-  .btn-mode:hover { color: #c9d1d9; background: #1f1f1f; }
-  .btn-mode.active { background: #58a6ff22; color: #58a6ff; }
-
-  .btn-save {
-    background: #222;
-    border: 1px solid #3a3a3a;
-    color: #3fb950;
-    cursor: pointer;
-    padding: 5px 12px;
-    border-radius: 5px;
-    font-size: 11px;
-    font-family: inherit;
-    letter-spacing: .5px;
-    transition: all .15s;
-    display: flex; align-items: center; gap: 6px;
-    min-height: 32px;
-  }
-  .btn-save:hover { background: #3fb95022; border-color: #3fb950; }
-  .btn-save:disabled { color: #444; border-color: #222; cursor: default; background: #1a1a1a; }
-  .save-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: #f0883e;
-  }
-
-  /* EDITOR AREA */
-  .editor-area {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-  }
-  .pane {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    min-width: 0;
-  }
-  .pane + .pane { border-left: 1px solid #222; }
-  .pane-label {
-    padding: 4px 14px;
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: #6e7681;
-    background: #1a1a1a;
-    border-bottom: 1px solid #222;
-    flex-shrink: 0;
-  }
-
-  .editor-textarea {
-    flex: 1;
-    background: #141414;
-    color: #c9d1d9;
-    border: none;
-    outline: none;
-    padding: 20px 24px;
-    font-family: inherit;
-    font-size: 13px;
-    line-height: 1.7;
-    resize: none;
-    tab-size: 2;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    /* avoid zoom on focus in iOS */
-    font-size: max(13px, 16px);
-  }
-  @media (min-width: 600px) {
-    .editor-textarea { font-size: 13px; }
-  }
-  .editor-textarea::selection { background: #58a6ff33; }
-  .editor-textarea::-webkit-scrollbar { width: 6px; }
-  .editor-textarea::-webkit-scrollbar-track { background: transparent; }
-  .editor-textarea::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
-
-  .preview-pane {
-    flex: 1;
-    padding: 20px 28px;
-    overflow-y: auto;
-    background: #141414;
-    line-height: 1.7;
-    -webkit-overflow-scrolling: touch;
-  }
-  .preview-pane::-webkit-scrollbar { width: 6px; }
-  .preview-pane::-webkit-scrollbar-track { background: transparent; }
-  .preview-pane::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
-
-  /* MD PREVIEW STYLES */
-  .preview-pane h1 { font-size: 1.8em; color: #e6edf3; margin: .6em 0 .4em; border-bottom: 1px solid #222; padding-bottom: .3em; }
-  .preview-pane h2 { font-size: 1.4em; color: #e6edf3; margin: .8em 0 .3em; border-bottom: 1px solid #1a1a1a; padding-bottom: .2em; }
-  .preview-pane h3 { font-size: 1.15em; color: #cdd9e5; margin: .7em 0 .3em; }
-  .preview-pane h4, .preview-pane h5, .preview-pane h6 { color: #cdd9e5; margin: .6em 0 .25em; }
-  .preview-pane p { margin: .5em 0; }
-  .preview-pane strong { color: #e6edf3; font-weight: 700; }
-  .preview-pane em { color: #c9d1d9; font-style: italic; }
-  .preview-pane code {
-    background: #161b22;
-    border: 1px solid #222;
-    color: #f0883e;
-    padding: 1px 6px;
-    border-radius: 3px;
-    font-size: .92em;
-    font-family: inherit;
-  }
-  .preview-pane pre {
-    background: #161b22;
-    border: 1px solid #222;
-    border-left: 3px solid #58a6ff;
-    padding: 14px 18px;
-    border-radius: 5px;
-    overflow-x: auto;
-    margin: .8em 0;
-  }
-  .preview-pane pre code {
-    background: none; border: none; padding: 0;
-    color: #a5d6ff; font-size: .9em;
-  }
-  .preview-pane blockquote {
-    border-left: 3px solid #58a6ff;
-    background: #161b22;
-    padding: 8px 16px;
-    margin: .7em 0;
-    color: #8b949e;
-    border-radius: 0 4px 4px 0;
-  }
-  .preview-pane ul, .preview-pane ol {
-    padding-left: 24px;
-    margin: .5em 0;
-  }
-  .preview-pane li { margin: .2em 0; }
-  .preview-pane a { color: #58a6ff; text-decoration: none; }
-  .preview-pane a:hover { text-decoration: underline; }
-  .preview-pane hr {
-    border: none;
-    border-top: 1px solid #333;
-    margin: 1.2em 0;
-  }
-  .preview-pane table {
-    border-collapse: collapse;
-    width: 100%;
-    margin: .8em 0;
-    font-size: .95em;
-  }
-  .preview-pane th, .preview-pane td {
-    border: 1px solid #2d333b;
-    padding: 6px 14px;
-    text-align: left;
-  }
-  .preview-pane th {
-    background: #161b22;
-    color: #e6edf3;
-    font-weight: 700;
-  }
-  .preview-pane tr:nth-child(even) td { background: #111519; }
-  .preview-pane tr:hover td { background: #1c2128; }
-
-  /* EMPTY STATE */
-  .empty-state {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 12px;
-    color: #6e7681;
-  }
-  .empty-state-icon { font-size: 36px; opacity: .4; }
-  .empty-state-text { font-size: 12px; letter-spacing: 1px; }
-
-  /* MODAL */
-  .modal-overlay {
-    position: fixed; inset: 0;
-    background: #00000088;
-    display: flex; align-items: center; justify-content: center;
-    z-index: 100;
-    backdrop-filter: blur(2px);
-    padding: 16px;
-  }
-  .modal {
-    background: #181818;
-    border: 1px solid #333;
-    border-radius: 8px;
-    padding: 24px;
-    width: 400px;
-    max-width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .modal-title {
-    font-size: 13px;
-    color: #58a6ff;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-  .modal-field { display: flex; flex-direction: column; gap: 6px; }
-  .modal-label { font-size: 10px; color: #8b949e; letter-spacing: 1px; text-transform: uppercase; }
-  .modal-input, .modal-textarea {
-    background: #141414;
-    border: 1px solid #333;
-    border-radius: 4px;
-    color: #c9d1d9;
-    font-family: inherit;
-    font-size: 16px; /* prevent iOS zoom */
-    padding: 8px 10px;
-    outline: none;
-    transition: border-color .15s;
-  }
-  .modal-input:focus, .modal-textarea:focus { border-color: #58a6ff; }
-  .modal-textarea { resize: vertical; min-height: 80px; }
-  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-  .btn-cancel {
-    background: #1a1a1a; border: 1px solid #333;
-    color: #8b949e; cursor: pointer;
-    padding: 8px 16px; border-radius: 5px;
-    font-family: inherit; font-size: 12px;
-    transition: all .15s;
-    min-height: 36px;
-  }
-  .btn-cancel:hover { border-color: #444; color: #c9d1d9; }
-  .btn-confirm {
-    background: #58a6ff22; border: 1px solid #58a6ff;
-    color: #58a6ff; cursor: pointer;
-    padding: 8px 16px; border-radius: 5px;
-    font-family: inherit; font-size: 12px;
-    transition: all .15s;
-    min-height: 36px;
-  }
-  .btn-confirm:hover { background: #58a6ff44; }
-
-  /* ── MOBILE overlay sidebar ─────────────────────────── */
-  @media (max-width: 600px) {
-    .btn-menu { display: flex; }
-
-    .sidebar {
-      position: fixed;
-      inset: 0 auto 0 0;
-      z-index: 50;
-      width: 260px;
-      transform: translateX(-100%);
-      box-shadow: 4px 0 24px #00000099;
-    }
-    .sidebar.open { transform: translateX(0); }
-
-    .sidebar-backdrop {
-      display: block;
-      position: fixed;
-      inset: 0;
-      background: #00000066;
-      z-index: 49;
-    }
-
-    /* in split mode on mobile, show only editor */
-    .editor-area .pane + .pane { display: none; }
-  }
-  .sidebar-backdrop { display: none; }
-`;
-
-// ── Minimal markdown renderer ──────────────────────────────────────────────
-function renderMarkdown(md: string): string {
-  if (!md) return "";
-  const lines = md.split("\n");
-  const html: string[] = [];
-  let i = 0;
-
-  const inline = (s: string) =>
-    s
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-      .replace(/`([^`]+)`/g, "<code>$1</code>")
-      .replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
-      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.+?)\*/g, "<em>$1</em>")
-      .replace(/__(.+?)__/g, "<strong>$1</strong>")
-      .replace(/_(.+?)_/g, "<em>$1</em>")
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-
-  while (i < lines.length) {
-    const line = lines[i];
-
-    // fenced code block
-    if (/^```/.test(line)) {
-      const lang = line.slice(3).trim();
-      const codeLines: string[] = [];
-      i++;
-      while (i < lines.length && !/^```/.test(lines[i])) {
-        codeLines.push(lines[i].replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"));
-        i++;
-      }
-      html.push(`<pre><code class="lang-${lang}">${codeLines.join("\n")}</code></pre>`);
-      i++;
-      continue;
-    }
-
-    // headings
-    const hm = line.match(/^(#{1,6})\s+(.+)/);
-    if (hm) { html.push(`<h${hm[1].length}>${inline(hm[2])}</h${hm[1].length}>`); i++; continue; }
-
-    // hr
-    if (/^(---|\*\*\*|___)\s*$/.test(line)) { html.push("<hr>"); i++; continue; }
-
-    // table
-    if (/^\|/.test(line) && i + 1 < lines.length && /^\|[\s\-:|]+\|/.test(lines[i + 1])) {
-      const tableLines: string[] = [];
-      while (i < lines.length && /^\|/.test(lines[i])) {
-        tableLines.push(lines[i]); i++;
-      }
-      const parseRow = (row: string) =>
-        row.split("|").slice(1, -1).map(cell => cell.trim());
-      const headers = parseRow(tableLines[0]);
-      const rows = tableLines.slice(2); // skip separator row
-      const thead = `<thead><tr>${headers.map(h => `<th>${inline(h)}</th>`).join("")}</tr></thead>`;
-      const tbody = rows.length
-        ? `<tbody>${rows.map(r => `<tr>${parseRow(r).map(c => `<td>${inline(c)}</td>`).join("")}</tr>`).join("")}</tbody>`
-        : "";
-      html.push(`<table>${thead}${tbody}</table>`);
-      continue;
-    }
-
-    // blockquote
-    if (/^>\s?/.test(line)) {
-      const qLines: string[] = [];
-      while (i < lines.length && /^>\s?/.test(lines[i])) {
-        qLines.push(inline(lines[i].replace(/^>\s?/, ""))); i++;
-      }
-      html.push(`<blockquote>${qLines.join("<br>")}</blockquote>`);
-      continue;
-    }
-
-    // unordered list
-    if (/^[\*\-\+]\s/.test(line)) {
-      const items: string[] = [];
-      while (i < lines.length && /^[\*\-\+]\s/.test(lines[i])) {
-        items.push(`<li>${inline(lines[i].replace(/^[\*\-\+]\s/, ""))}</li>`); i++;
-      }
-      html.push(`<ul>${items.join("")}</ul>`);
-      continue;
-    }
-
-    // ordered list
-    if (/^\d+\.\s/.test(line)) {
-      const items: string[] = [];
-      while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
-        items.push(`<li>${inline(lines[i].replace(/^\d+\.\s/, ""))}</li>`); i++;
-      }
-      html.push(`<ol>${items.join("")}</ol>`);
-      continue;
-    }
-
-    // blank line
-    if (line.trim() === "") { i++; continue; }
-
-    // paragraph
-    html.push(`<p>${inline(line)}</p>`);
-    i++;
-  }
-
-  return html.join("\n");
+function resolvePath(dir: string, rel: string): string {
+  if (rel.startsWith('/')) return rel;
+  const parts = dir === '/' ? [] : dir.split('/').filter(Boolean);
+  for (const part of rel.replace(/^\.\//, '').split('/')) {
+    if (part === '..') parts.pop();
+    else if (part !== '.') parts.push(part);
+  }
+  return '/' + parts.join('/');
 }
 
-// ── ID generator ──────────────────────────────────────────────────────────
-let _id = 0;
-const uid = () => `doc_${Date.now()}_${_id++}`;
+declare const __APP_VERSION__: string
 
-// ── Default doc ───────────────────────────────────────────────────────────
-const DEFAULT_DOC = {
-  id: uid(),
-  title: "Bienvenido",
-  content: `# Bienvenido al editor\n\nEste es un **editor de Markdown** con diseño terminal.\n\n## Características\n\n- Vista previa en tiempo real\n- Modo split, edición y preview\n- Storage persistente entre sesiones\n- Funciona **offline** como PWA\n\n## Ejemplo de código\n\n\`\`\`typescript\nconst greet = (name: string): string => {\n  return \`Hola, \${name}!\`;\n};\n\`\`\`\n\n> _"Any fool can write code that a computer can understand. Good programmers write code that humans can understand."_ — Martin Fowler\n\n---\n\nUsa el panel izquierdo para gestionar tus documentos.`,
-};
+const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform)
+const MOD = isMac ? '⌘' : 'Ctrl'
+const mod = (e: KeyboardEvent | React.KeyboardEvent) => isMac ? e.metaKey : e.ctrlKey
 
-interface Doc {
-  id: string;
-  title: string;
-  content: string;
-  fileHandle?: FileSystemFileHandle; // presente solo en docs respaldados por el FS
-  path?: string[];                   // sub-carpetas relativas al directorio raíz
+type InstallPromptEvent = Event & { prompt(): Promise<void> }
+
+function applyTheme(theme: 'light' | 'dark') {
+  document.documentElement.setAttribute('data-theme', theme)
 }
 
-// ── File tree types & helpers ──────────────────────────────────────────────
-type FolderNode = { type: "folder"; name: string; key: string; children: FileTreeItem[] };
-type FileTreeItem = Doc | FolderNode;
-
-function groupByFolder(docs: Doc[], depth = 0): FileTreeItem[] {
-  const folders = new Map<string, Doc[]>();
-  const files: Doc[] = [];
-
-  for (const doc of docs) {
-    const p = doc.path ?? [];
-    if (p.length <= depth) {
-      files.push(doc);
-    } else {
-      const name = p[depth];
-      if (!folders.has(name)) folders.set(name, []);
-      folders.get(name)!.push(doc);
-    }
+// Devuelve true si el nodo ID vive bajo un nodo fsRoot
+function isUnderFsRoot(id: string, tree: Tree): boolean {
+  let n: TNode | undefined = tree.nodes[id]
+  while (n && n.parentId) {
+    n = tree.nodes[n.parentId]
+    if (n?.type === 'folder' && (n as TreeFolderNode).fsRoot) return true
   }
-
-  const result: FileTreeItem[] = [];
-  for (const [name, children] of [...folders.entries()].sort(([a], [b]) => a.localeCompare(b))) {
-    const key = children[0].path!.slice(0, depth + 1).join("/");
-    result.push({ type: "folder", name, key, children: groupByFolder(children, depth + 1) });
-  }
-  files.sort((a, b) => a.title.localeCompare(b.title));
-  result.push(...files);
-  return result;
+  return false
 }
 
-function mergeEmptyFolders(tree: FileTreeItem[], emptyPaths: Iterable<string>): FileTreeItem[] {
-  const insert = (segs: string[], nodes: FileTreeItem[], depth: number) => {
-    if (depth >= segs.length) return;
-    const name = segs[depth];
-    let folder = nodes.find(
-      n => "type" in n && n.type === "folder" && (n as FolderNode).name === name
-    ) as FolderNode | undefined;
-    if (!folder) {
-      folder = {
-        type: "folder",
-        name,
-        key: segs.slice(0, depth + 1).join("/"),
-        children: [],
-      };
-      // keep folders before files, alphabetical
-      const fileStart = nodes.findIndex(n => !("type" in n) || (n as FolderNode).type !== "folder");
-      const end = fileStart === -1 ? nodes.length : fileStart;
-      let pos = 0;
-      while (pos < end && (nodes[pos] as FolderNode).name.localeCompare(name) < 0) pos++;
-      nodes.splice(pos, 0, folder);
-    }
-    insert(segs, folder.children, depth + 1);
-  };
-  for (const p of emptyPaths) {
-    const segs = p.split("/").filter(Boolean);
-    if (segs.length) insert(segs, tree, 0);
-  }
-  return tree;
+// Elimina el subárbol fsRoot existente del árbol (si hay uno)
+function removeFsSubtree(tree: Tree): Tree {
+  const fsRootId = Object.keys(tree.nodes).find(
+    id => tree.nodes[id].type === 'folder' && (tree.nodes[id] as TreeFolderNode).fsRoot
+  )
+  if (!fsRootId) return tree
+  return removeNode(tree, fsRootId)
 }
 
-async function readDirRecursive(
-  dirHandle: FileSystemDirectoryHandle,
-  path: string[] = []
-): Promise<Doc[]> {
-  const results: Doc[] = [];
-  for await (const entry of (dirHandle as unknown as { values(): AsyncIterable<FileSystemHandle> }).values()) {
-    if (entry.kind === "file" && /\.(md|markdown|txt)$/i.test(entry.name)) {
-      const fileHandle = entry as FileSystemFileHandle;
-      const file = await fileHandle.getFile();
-      const content = await file.text();
-      const title = entry.name.replace(/\.(md|markdown|txt)$/i, "");
-      results.push({ id: uid(), title, content, fileHandle, path });
-    } else if (entry.kind === "directory") {
-      const sub = await readDirRecursive(
-        entry as unknown as FileSystemDirectoryHandle,
-        [...path, entry.name]
-      );
-      results.push(...sub);
-    }
-  }
-  return results;
-}
-
-// ── Modal types ───────────────────────────────────────────────────────────
-type ModalKind =
-  | { kind: "new-local" }
-  | { kind: "new-fs-file"; path: string[] }
-  | { kind: "new-fs-folder"; path: string[] }
-  | { kind: "rename-file"; docId: string };
-
-// ── Main component ─────────────────────────────────────────────────────────
 export default function App() {
-  const [docs, setDocs] = useState<Doc[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [draftContent, setDraftContent] = useState("");
-  const [mode, setMode] = useState<"edit" | "view" | "split">("split");
-  const [unsaved, setUnsaved] = useState(false);
-  const [modalKind, setModalKind] = useState<ModalKind | null>(null);
-  const [modalInput, setModalInput] = useState("");
-  const [modalContent, setModalContent] = useState("");
-  const [loaded, setLoaded] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [dirName, setDirName] = useState<string | null>(null);
-  const [rootDirHandle, setRootDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
-  const [emptyFolders, setEmptyFolders] = useState<Set<string>>(new Set());
-  const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
-  const [installPrompt, setInstallPrompt] = useState<Event & { prompt(): Promise<void> } | null>(null);
-  const modalInputRef = useRef<HTMLInputElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const initial = useMemo(() => loadState(), [])
 
-  // PWA update lifecycle
-  const {
-    needRefresh: [needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
-    onRegisteredSW(_url, reg) {
-      if (!reg) return;
-      const INTERVAL = 30 * 60 * 1000;
-      window.setInterval(() => { void reg.update(); }, INTERVAL);
-      window.addEventListener("focus", () => { void reg.update(); });
-    },
-  });
+  const [tree, setTree] = useState<Tree>(initial.tree)
+  const [activeId, setActiveId] = useState<string | null>(initial.activeId)
+  const [openTabs, setOpenTabs] = useState<string[]>(initial.openTabs)
+  const [viewMode, setViewMode] = useState<ViewMode>(initial.viewMode)
+  const [sidebarOpen, setSidebarOpen] = useState(initial.sidebarOpen)
+  const [splitRatio, setSplitRatio] = useState(initial.splitRatio)
+  const [theme, setTheme] = useState<'light' | 'dark'>(initial.theme)
 
-  // Load from localStorage
+  const [dirtyFsIds, setDirtyFsIds] = useState(new Set<string>())
+  const [dirName, setDirName] = useState<string | null>(null)
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null)
+
+  const [menu, setMenu] = useState<ContextMenuState | null>(null)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [justCreatedId, setJustCreatedId] = useState<string | null>(null)
+  const [dragState, setDragState] = useState<string | null>(null)
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const [paletteQuery, setPaletteQuery] = useState('')
+  const [paletteSel, setPaletteSel] = useState(0)
+  const [toasts, setToasts] = useState<{ id: string; msg: string; icon: string }[]>([])
+
+  const editorRef = useRef<HTMLDivElement>(null)
+  const previewRef = useRef<HTMLDivElement>(null)
+  const panesRef = useRef<HTMLDivElement>(null)
+  const dragGutterRef = useRef(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Tema
+  useEffect(() => { applyTheme(theme) }, [theme])
+
+  // Persistir estado
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      const saved: Doc[] | null = raw ? JSON.parse(raw) : null;
-      if (saved && Array.isArray(saved) && saved.length > 0) {
-        setDocs(saved);
-        setActiveId(saved[0].id);
-        setDraftContent(saved[0].content);
-      } else {
-        setDocs([DEFAULT_DOC]);
-        setActiveId(DEFAULT_DOC.id);
-        setDraftContent(DEFAULT_DOC.content);
-      }
-    } catch {
-      setDocs([DEFAULT_DOC]);
-      setActiveId(DEFAULT_DOC.id);
-      setDraftContent(DEFAULT_DOC.content);
-    }
-    // Web Share Target — abre archivos .md compartidos desde Android
+    saveState({ tree, activeId, openTabs, viewMode, sidebarOpen, splitRatio, theme })
+  }, [tree, activeId, openTabs, viewMode, sidebarOpen, splitRatio, theme])
+
+  // Web Share Target — archivos .md compartidos desde Android
+  useEffect(() => {
+    if (!('caches' in window)) return
     void (async () => {
-      if (!("caches" in window)) return;
       try {
-        const cache = await caches.open("share-target-v1");
-        const res = await cache.match("/pwa-md-editor/__shared-file__");
-        if (!res) return;
-        await cache.delete("/pwa-md-editor/__shared-file__");
-        const { name, content } = await res.json() as { name: string; content: string };
-        const title = name.replace(/\.(md|markdown|txt)$/i, "");
-        const doc: Doc = { id: uid(), title, content };
-        setDocs(prev => {
-          const next = [doc, ...prev];
-          try {
-            const local = next.filter(d => !d.fileHandle);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
-          } catch {}
-          return next;
-        });
-        setActiveId(doc.id);
-        setDraftContent(content);
-        setUnsaved(false);
-      } catch { /* ignorar errores de cache */ }
-    })();
-
-    setLoaded(true);
-  }, []);
-
-  const persist = useCallback((nextDocs: Doc[]) => {
-    try {
-      // los docs con fileHandle viven en el FS, no en localStorage
-      const local = nextDocs.filter(d => !d.fileHandle);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(local));
-    } catch {}
-  }, []);
-
-  const activeDoc = docs.find(d => d.id === activeId) || null;
-
-  const selectDoc = (doc: Doc) => {
-    setActiveId(doc.id);
-    setDraftContent(doc.content);
-    setUnsaved(false);
-    setSidebarOpen(false);
-  };
-
-  const handleChange = (val: string) => {
-    setDraftContent(val);
-    setUnsaved(val !== (activeDoc?.content ?? ""));
-  };
-
-  const saveDoc = async () => {
-    if (!activeDoc || !unsaved) return;
-    if (activeDoc.fileHandle) {
-      try {
-        const handle = activeDoc.fileHandle as FileSystemFileHandle & {
-          queryPermission(desc: { mode: string }): Promise<PermissionState>;
-          requestPermission(desc: { mode: string }): Promise<PermissionState>;
-        };
-        let perm = await handle.queryPermission({ mode: "readwrite" });
-        if (perm !== "granted") {
-          perm = await handle.requestPermission({ mode: "readwrite" });
+        const cache = await caches.open('share-target-v1')
+        const res = await cache.match('/pwa-md-editor/__shared-file__')
+        if (!res) return
+        await cache.delete('/pwa-md-editor/__shared-file__')
+        const { name, content } = await res.json() as { name: string; content: string }
+        const fileNode: TreeFileNode = {
+          id: uid(), type: 'file', name,
+          parentId: '', content, createdAt: Date.now(),
         }
-        if (perm !== "granted") return;
-        const writable = await handle.createWritable();
-        await writable.write(draftContent);
-        await writable.close();
-      } catch {
-        return; // permiso denegado u otro error — no marcar como guardado
-      }
+        setTree(t => addNode(t, t.root, fileNode))
+        setActiveId(fileNode.id)
+        setOpenTabs(t => [...t, fileNode.id])
+      } catch {}
+    })()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // PWA install prompt
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault()
+      setInstallPrompt(e as InstallPromptEvent)
     }
-    const next = docs.map(d => d.id === activeId ? { ...d, content: draftContent } : d);
-    setDocs(next);
-    setUnsaved(false);
-    persist(next);
-  };
+    window.addEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', () => setInstallPrompt(null))
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
 
-  const removeDocFromState = (id: string) => {
-    const next = docs.filter(d => d.id !== id);
-    setDocs(next);
-    if (activeId === id) {
-      const first = next[0] || null;
-      setActiveId(first?.id || null);
-      setDraftContent(first?.content || "");
-      setUnsaved(false);
+  const activeNode = activeId && tree.nodes[activeId]?.type === 'file'
+    ? tree.nodes[activeId] as TreeFileNode
+    : null
+
+  const toast = useCallback((msg: string, icon = 'check') => {
+    const id = uid()
+    setToasts(t => [...t, { id, msg, icon }])
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 1800)
+  }, [])
+
+  const openFile = useCallback((id: string) => {
+    setActiveId(id)
+    setOpenTabs(t => t.includes(id) ? t : [...t, id])
+  }, [])
+
+  const handlePreviewClick = useCallback((e: React.MouseEvent) => {
+    const anchor = (e.target as HTMLElement).closest('a') as HTMLAnchorElement | null
+    if (!anchor) return
+
+    const rel = anchor.getAttribute('data-internal-link')
+    if (rel) {
+      e.preventDefault()
+      if (!activeId) return
+      const dir = pathOf(tree, activeId).replace(/\/[^/]+$/, '') || '/'
+      const resolved = resolvePath(dir, rel)
+      const match = Object.values(tree.nodes).find(n => n.type === 'file' && pathOf(tree, n.id) === resolved)
+      if (!match) return
+      const hash = anchor.getAttribute('data-internal-hash')
+      openFile(match.id)
+      if (hash) setTimeout(() => document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' }), 80)
+      return
     }
-    persist(next);
-  };
 
-  const deleteDoc = async (id: string) => {
-    const doc = docs.find(d => d.id === id);
-    if (!doc) return;
-    if (doc.fileHandle) {
-      if (!window.confirm(`Borrar "${doc.title}" del disco?`)) return;
-      try {
-        const parent = await getDirHandleByPath(doc.path ?? []);
-        await parent.removeEntry(doc.fileHandle.name);
-      } catch (e) {
-        alert("No se pudo borrar: " + (e as Error).message);
-        return;
-      }
+    const href = anchor.getAttribute('href')
+    if (href?.startsWith('#')) {
+      e.preventDefault()
+      document.getElementById(href.slice(1))?.scrollIntoView({ behavior: 'smooth' })
     }
-    removeDocFromState(id);
-  };
+  }, [tree, activeId, openFile])
 
-  const getDirHandleByPath = async (path: string[]): Promise<FileSystemDirectoryHandle> => {
-    if (!rootDirHandle) throw new Error("No hay directorio anclado");
-    let handle = rootDirHandle;
-    for (const seg of path) {
-      handle = await handle.getDirectoryHandle(seg);
+  const closeTab = useCallback((id: string) => {
+    setOpenTabs(t => {
+      const idx = t.indexOf(id)
+      const next = t.filter(x => x !== id)
+      if (activeId === id) setActiveId(next[idx] ?? next[idx - 1] ?? null)
+      return next
+    })
+  }, [activeId])
+
+  const cycleView = useCallback(() => {
+    setViewMode(v => v === 'edit' ? 'split' : v === 'split' ? 'preview' : 'edit')
+  }, [])
+
+  // Guarda el archivo activo al disco si tiene fileHandle
+  const saveDoc = useCallback(async () => {
+    if (!activeNode) return
+    if (activeNode.fileHandle) {
+      const ok = await saveFileToDisk(activeNode.fileHandle, activeNode.content || '')
+      if (!ok) { toast('No se pudo guardar', 'close'); return }
+      setDirtyFsIds(s => { const n = new Set(s); n.delete(activeNode.id); return n })
     }
-    return handle;
-  };
+    toast('Guardado', 'save')
+  }, [activeNode, toast])
 
-  const ensureFsPermission = async () => {
-    if (!rootDirHandle) return false;
-    const h = rootDirHandle as FileSystemDirectoryHandle & {
-      queryPermission(desc: { mode: string }): Promise<PermissionState>;
-      requestPermission(desc: { mode: string }): Promise<PermissionState>;
-    };
-    let perm = await h.queryPermission({ mode: "readwrite" });
-    if (perm !== "granted") perm = await h.requestPermission({ mode: "readwrite" });
-    return perm === "granted";
-  };
-
-  const entryExists = async (
-    parent: FileSystemDirectoryHandle,
-    name: string
-  ): Promise<"file" | "dir" | null> => {
-    try { await parent.getFileHandle(name); return "file"; } catch { /* ignore */ }
-    try { await parent.getDirectoryHandle(name); return "dir"; } catch { /* ignore */ }
-    return null;
-  };
-
-  const createFsFile = async (path: string[], rawName: string, content: string) => {
-    if (!rootDirHandle) return;
-    const name = rawName.trim();
-    if (!name) return;
-    if (!(await ensureFsPermission())) return;
-    const fileName = /\.(md|markdown|txt)$/i.test(name) ? name : name + ".md";
-    try {
-      const parent = await getDirHandleByPath(path);
-      if (await entryExists(parent, fileName)) {
-        alert(`Ya existe "${fileName}" en esta carpeta.`);
-        return;
-      }
-      const handle = await parent.getFileHandle(fileName, { create: true });
-      const writable = await handle.createWritable();
-      await writable.write(content);
-      await writable.close();
-      const title = fileName.replace(/\.(md|markdown|txt)$/i, "");
-      const doc: Doc = { id: uid(), title, content, fileHandle: handle, path };
-      setDocs(prev => [doc, ...prev]);
-      setActiveId(doc.id);
-      setDraftContent(content);
-      setUnsaved(false);
-      setSidebarOpen(false);
-      const key = path.join("/");
-      if (key) {
-        setEmptyFolders(prev => {
-          if (!prev.has(key)) return prev;
-          const next = new Set(prev);
-          next.delete(key);
-          return next;
-        });
-      }
-    } catch (e) {
-      alert("No se pudo crear el archivo: " + (e as Error).message);
+  const handleCreate = useCallback((parentId: string, type: 'file' | 'folder') => {
+    const baseName = type === 'folder' ? 'Nueva carpeta' : 'Sin título.md'
+    const siblings = (tree.nodes[parentId] as TreeFolderNode)?.children?.map(c => tree.nodes[c]?.name) ?? []
+    let name = baseName
+    let n = 2
+    while (siblings.includes(name)) {
+      name = type === 'folder' ? `Nueva carpeta ${n}` : `Sin título ${n}.md`
+      n++
     }
-  };
+    const id = uid()
+    const node: TNode = type === 'folder'
+      ? { id, type: 'folder', name, parentId, children: [], open: false }
+      : { id, type: 'file', name, parentId, content: '', createdAt: Date.now() }
+    setTree(t => addNode(t, parentId, node))
+    setJustCreatedId(id)
+    if (type === 'file') { setActiveId(id); setOpenTabs(t => [...t, id]) }
+    toast(`Creado: ${name}`, type === 'folder' ? 'folder' : 'file-md')
+  }, [tree, toast])
 
-  const createFsFolder = async (path: string[], rawName: string) => {
-    if (!rootDirHandle) return;
-    const name = rawName.trim();
-    if (!name) return;
-    if (!(await ensureFsPermission())) return;
-    try {
-      const parent = await getDirHandleByPath(path);
-      if (await entryExists(parent, name)) {
-        alert(`Ya existe "${name}" en esta carpeta.`);
-        return;
-      }
-      await parent.getDirectoryHandle(name, { create: true });
-      const key = [...path, name].join("/");
-      setEmptyFolders(prev => new Set(prev).add(key));
-      // expand parent so the new folder is visible
-      setCollapsedFolders(prev => {
-        const pk = path.join("/");
-        if (!pk || !prev.has(pk)) return prev;
-        const n = new Set(prev);
-        n.delete(pk);
-        return n;
-      });
-    } catch (e) {
-      alert("No se pudo crear la carpeta: " + (e as Error).message);
+  const handleDelete = useCallback((id: string) => {
+    const node = tree.nodes[id]
+    if (!node) return
+    const label = node.type === 'folder' ? `carpeta "${node.name}" y todo su contenido` : `"${node.name}"`
+    if (!window.confirm(`¿Eliminar ${label}?`)) return
+    const toCloseTabs: string[] = []
+    const collect = (nid: string) => {
+      const n = tree.nodes[nid]; if (!n) return
+      if (n.type === 'file') toCloseTabs.push(nid)
+      else (n as TreeFolderNode).children.forEach(collect)
     }
-  };
-
-  const renameFsFile = async (doc: Doc, rawName: string) => {
-    if (!rootDirHandle || !doc.fileHandle) return;
-    const name = rawName.trim();
-    if (!name) return;
-    const oldName = doc.fileHandle.name;
-    const origExt = oldName.match(/\.(md|markdown|txt)$/i)?.[0] ?? ".md";
-    const fileName = /\.(md|markdown|txt)$/i.test(name) ? name : name + origExt;
-    if (fileName === oldName) return;
-    if (!(await ensureFsPermission())) return;
-    try {
-      const parent = await getDirHandleByPath(doc.path ?? []);
-      if (await entryExists(parent, fileName)) {
-        alert(`Ya existe "${fileName}" en esta carpeta.`);
-        return;
-      }
-      const liveContent = activeId === doc.id ? draftContent : doc.content;
-      const newHandle = await parent.getFileHandle(fileName, { create: true });
-      const writable = await newHandle.createWritable();
-      await writable.write(liveContent);
-      await writable.close();
-      await parent.removeEntry(oldName);
-      const title = fileName.replace(/\.(md|markdown|txt)$/i, "");
-      setDocs(prev => prev.map(d =>
-        d.id === doc.id ? { ...d, title, content: liveContent, fileHandle: newHandle } : d
-      ));
-      if (activeId === doc.id) setUnsaved(false);
-    } catch (e) {
-      alert("No se pudo renombrar: " + (e as Error).message);
+    collect(id)
+    setTree(t => removeNode(t, id))
+    setOpenTabs(t => t.filter(x => !toCloseTabs.includes(x)))
+    if (toCloseTabs.includes(activeId!) || id === activeId) {
+      const remaining = openTabs.filter(x => !toCloseTabs.includes(x))
+      setActiveId(remaining[0] ?? null)
     }
-  };
+    toast(`Eliminado: ${node.name}`, 'trash')
+  }, [tree, activeId, openTabs, toast])
 
-  const openDirectory = async () => {
-    if (!("showDirectoryPicker" in window)) {
-      alert("Tu navegador no soporta la File System Access API.\nUsa Chrome 86+ o Edge.");
-      return;
+  const handleRename = useCallback((id: string, name: string) => {
+    setTree(t => renameNode(t, id, name))
+  }, [])
+
+  const handleMove = useCallback((id: string, newParentId: string) => {
+    // v1: nodos FS son read-only en estructura
+    if (isUnderFsRoot(id, tree)) return
+    setTree(t => moveNode(t, id, newParentId))
+  }, [tree])
+
+  const handleDuplicate = useCallback((id: string) => {
+    setTree(t => duplicateNode(t, id))
+    toast('Duplicado')
+  }, [toast])
+
+  const handleContextMenu = useCallback((e: React.MouseEvent, node: TNode) => {
+    const isFile = node.type === 'file'
+    const underFs = isUnderFsRoot(node.id, tree)
+
+    const items = [
+      ...(node.type === 'folder' && !underFs ? [
+        { label: 'Nuevo archivo', icon: 'new-file' as const, onClick: () => handleCreate(node.id, 'file'), shortcut: `${MOD}N` },
+        { label: 'Nueva carpeta', icon: 'new-folder' as const, onClick: () => handleCreate(node.id, 'folder') },
+        { sep: true },
+      ] : []),
+      ...(isFile ? [
+        { label: 'Abrir', icon: 'file' as const, onClick: () => openFile(node.id) },
+        { label: 'Duplicar', icon: 'copy' as const, onClick: () => handleDuplicate(node.id) },
+      ] : []),
+      ...(node.id !== tree.root && !underFs ? [
+        { label: 'Renombrar', icon: 'rename' as const, onClick: () => setRenamingId(node.id), shortcut: 'F2' },
+        { sep: true },
+        { label: 'Eliminar', icon: 'trash' as const, onClick: () => handleDelete(node.id), danger: true, shortcut: '⌫' },
+      ] : []),
+    ]
+    if (items.length > 0) setMenu({ x: e.clientX, y: e.clientY, items })
+  }, [tree, handleCreate, openFile, handleDuplicate, handleDelete])
+
+  const handleContentChange = useCallback((content: string) => {
+    if (!activeId) return
+    setTree(t => updateContent(t, activeId, content))
+    const node = tree.nodes[activeId] as TreeFileNode
+    if (node?.fileHandle) {
+      setDirtyFsIds(s => s.has(activeId) ? s : new Set(s).add(activeId))
+    }
+  }, [activeId, tree])
+
+  const exportCurrent = useCallback(() => {
+    if (!activeNode) return
+    const blob = new Blob([activeNode.content || ''], { type: 'text/markdown' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = activeNode.name
+    a.click()
+    toast('Exportado')
+  }, [activeNode, toast])
+
+  // ── File System ──────────────────────────────────────────────────────────
+
+  const openDirectory = useCallback(async () => {
+    if (!('showDirectoryPicker' in window)) {
+      alert('Tu navegador no soporta la File System Access API.\nUsa Chrome 86+ o Edge.')
+      return
     }
     try {
       const dirHandle = await (window as unknown as {
         showDirectoryPicker(o?: { mode: string }): Promise<FileSystemDirectoryHandle>
-      }).showDirectoryPicker({ mode: "readwrite" });
+      }).showDirectoryPicker({ mode: 'readwrite' })
 
-      const newDocs = await readDirRecursive(dirHandle);
-      newDocs.sort((a, b) => {
-        const pa = (a.path ?? []).join("/");
-        const pb = (b.path ?? []).join("/");
-        if (pa !== pb) return pa.localeCompare(pb);
-        return a.title.localeCompare(b.title);
-      });
-      setCollapsedFolders(new Set());
+      const { rootId, nodes } = await buildFsSubtree(dirHandle)
+      setTree(t => {
+        const cleaned = removeFsSubtree(t)
+        const merged = { ...cleaned, nodes: { ...cleaned.nodes, ...nodes } }
+        const root = merged.nodes[merged.root] as TreeFolderNode
+        merged.nodes[merged.root] = {
+          ...root,
+          children: [rootId, ...root.children.filter(c => !(nodes[c] as TreeFolderNode | undefined)?.fsRoot)],
+        }
+        nodes[rootId] = { ...nodes[rootId], parentId: merged.root }
+        return merged
+      })
+      setDirName(dirHandle.name)
 
-      setDirName(dirHandle.name);
-      setRootDirHandle(dirHandle);
-      setEmptyFolders(new Set());
-      setDocs(prev => {
-        // reemplaza los docs anteriores del directorio, conserva los locales
-        const local = prev.filter(d => !d.fileHandle);
-        return [...newDocs, ...local];
-      });
-      if (newDocs.length > 0) {
-        setActiveId(newDocs[0].id);
-        setDraftContent(newDocs[0].content);
-        setUnsaved(false);
-      }
-      setSidebarOpen(false);
+      // Abrir el primer archivo del directorio
+      const firstFile = Object.values(nodes).find(n => n.type === 'file') as TreeFileNode | undefined
+      if (firstFile) { setActiveId(firstFile.id); setOpenTabs(t => [...t, firstFile.id]) }
     } catch {
-      // usuario canceló el picker
+      // usuario canceló
     }
-  };
+  }, [])
 
-  const unpinDirectory = () => {
-    setDirName(null);
-    setRootDirHandle(null);
-    setEmptyFolders(new Set());
-    setDocs(prev => {
-      const local = prev.filter(d => !d.fileHandle);
-      // si el doc activo era del directorio, seleccionar el primero local
-      if (activeId && docs.find(d => d.id === activeId)?.fileHandle) {
-        const first = local[0] || null;
-        setActiveId(first?.id || null);
-        setDraftContent(first?.content || "");
-        setUnsaved(false);
-      }
-      return local;
-    });
-  };
+  const unpinDirectory = useCallback(() => {
+    setTree(t => {
+      const cleaned = removeFsSubtree(t)
+      return cleaned
+    })
+    setDirName(null)
+    setDirtyFsIds(new Set())
+    setActiveId(id => {
+      if (id && tree.nodes[id] && isUnderFsRoot(id, tree)) return null
+      return id
+    })
+    setOpenTabs(t => t.filter(id => !isUnderFsRoot(id, tree)))
+  }, [tree])
 
-  const toggleFolder = (key: string) => {
-    setCollapsedFolders(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
-  };
+  const openFilesViaInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    const newNodes = await fileListToNodes(files)
+    setTree(t => {
+      let next = t
+      for (const node of newNodes) next = addNode(next, next.root, node)
+      return next
+    })
+    if (newNodes.length > 0) { setActiveId(newNodes[0].id); setOpenTabs(t => [...t, newNodes[0].id]) }
+    e.target.value = ''
+  }, [])
 
-  const handleFileOpen = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const content = reader.result as string;
-        const title = file.name.replace(/\.(md|markdown|txt)$/i, "");
-        const doc: Doc = { id: uid(), title, content };
-        setDocs(prev => {
-          const next = [doc, ...prev];
-          persist(next);
-          return next;
-        });
-        setActiveId(doc.id);
-        setDraftContent(content);
-        setUnsaved(false);
-        setSidebarOpen(false);
-      };
-      reader.readAsText(file);
-    });
-    // reset so el mismo archivo se puede abrir de nuevo
-    e.target.value = "";
-  };
+  const handleInstall = useCallback(async () => {
+    if (!installPrompt) return
+    await installPrompt.prompt()
+    setInstallPrompt(null)
+  }, [installPrompt])
 
-  const openModal = (kind: ModalKind) => {
-    setModalKind(kind);
-    if (kind.kind === "rename-file") {
-      const d = docs.find(x => x.id === kind.docId);
-      setModalInput(d?.title ?? "");
-      setModalContent("");
-    } else {
-      setModalInput("");
-      setModalContent("");
-    }
-    setTimeout(() => {
-      const el = modalInputRef.current;
-      if (!el) return;
-      el.focus();
-      if (kind.kind === "rename-file") el.select();
-    }, 50);
-  };
-  const closeModal = () => setModalKind(null);
+  // ── Atajos de teclado ────────────────────────────────────────────────────
 
-  const createLocalDoc = () => {
-    const title = modalInput.trim() || "Sin título";
-    const doc: Doc = { id: uid(), title, content: modalContent };
-    const next = [doc, ...docs];
-    setDocs(next);
-    setActiveId(doc.id);
-    setDraftContent(doc.content);
-    setUnsaved(false);
-    setSidebarOpen(false);
-    persist(next);
-  };
-
-  const confirmModal = async () => {
-    if (!modalKind) return;
-    if (modalKind.kind === "new-local") {
-      createLocalDoc();
-    } else if (modalKind.kind === "new-fs-file") {
-      if (!modalInput.trim()) return;
-      await createFsFile(modalKind.path, modalInput, modalContent);
-    } else if (modalKind.kind === "new-fs-folder") {
-      if (!modalInput.trim()) return;
-      await createFsFolder(modalKind.path, modalInput);
-    } else if (modalKind.kind === "rename-file") {
-      if (!modalInput.trim()) return;
-      const d = docs.find(x => x.id === modalKind.docId);
-      if (d) await renameFsFile(d, modalInput);
-    }
-    setModalKind(null);
-  };
-
-  // Captura el prompt de instalación PWA
   useEffect(() => {
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setInstallPrompt(e as Event & { prompt(): Promise<void> });
-    };
-    window.addEventListener("beforeinstallprompt", handler);
-    window.addEventListener("appinstalled", () => setInstallPrompt(null));
-    return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, []);
+    const h = (e: KeyboardEvent) => {
+      if (mod(e) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPaletteOpen(o => !o) }
+      else if (mod(e) && e.key.toLowerCase() === 'n') { e.preventDefault(); handleCreate(activeNode?.parentId ?? tree.root, 'file') }
+      else if (mod(e) && e.key.toLowerCase() === 's') { e.preventDefault(); void saveDoc() }
+      else if (mod(e) && e.key.toLowerCase() === 'b') { e.preventDefault(); setSidebarOpen(s => !s) }
+      else if (mod(e) && e.key.toLowerCase() === 'p') { e.preventDefault(); cycleView() }
+      else if (mod(e) && e.key.toLowerCase() === 'w' && activeId) { e.preventDefault(); closeTab(activeId) }
+      else if (e.key === 'F2' && activeId && !paletteOpen) { e.preventDefault(); setRenamingId(activeId) }
+      else if (e.key === 'Escape') { setPaletteOpen(false); setMenu(null); setRenamingId(null) }
+    }
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [activeId, activeNode, paletteOpen, tree, handleCreate, cycleView, closeTab, saveDoc])
 
-  // Ctrl/Cmd+S to save
+  // Scroll sincronizado editor → preview
+  const handleEditorScroll = useCallback(() => {
+    if (viewMode !== 'split' || !editorRef.current || !previewRef.current) return
+    const e = editorRef.current
+    const p = previewRef.current
+    p.scrollTop = (e.scrollTop / Math.max(1, e.scrollHeight - e.clientHeight)) * Math.max(0, p.scrollHeight - p.clientHeight)
+  }, [viewMode])
+
+  // Drag del gutter
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-        saveDoc();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  });
+    const up = () => { dragGutterRef.current = false; document.body.style.cursor = '' }
+    const mv = (e: MouseEvent) => {
+      if (!dragGutterRef.current || !panesRef.current) return
+      const rect = panesRef.current.getBoundingClientRect()
+      setSplitRatio(Math.max(0.2, Math.min(0.8, (e.clientX - rect.left) / rect.width)))
+    }
+    window.addEventListener('mousemove', mv)
+    window.addEventListener('mouseup', up)
+    return () => { window.removeEventListener('mousemove', mv); window.removeEventListener('mouseup', up) }
+  }, [])
 
-  if (!loaded) return null;
+  // ── Command palette ──────────────────────────────────────────────────────
+
+  const paletteItems = useMemo(() => {
+    const q = paletteQuery.toLowerCase().trim()
+    const match = (s: string) => !q || s.toLowerCase().includes(q)
+    const files = flatFiles(tree).map(f => ({
+      kind: 'file' as const, id: f.id, label: f.name,
+      sub: pathOf(tree, f.id), icon: 'file-md' as const,
+      onClick: () => openFile(f.id),
+    })).filter(f => match(f.label) || match(f.sub))
+    const actions = [
+      { kind: 'action' as const, label: 'Nuevo archivo', icon: 'new-file' as const, kbd: `${MOD} N`, onClick: () => handleCreate(activeNode?.parentId ?? tree.root, 'file') },
+      { kind: 'action' as const, label: 'Nueva carpeta', icon: 'new-folder' as const, onClick: () => handleCreate(tree.root, 'folder') },
+      { kind: 'action' as const, label: 'Abrir directorio', icon: 'folder-open' as const, onClick: openDirectory },
+      { kind: 'action' as const, label: 'Mostrar/ocultar sidebar', icon: 'sidebar' as const, kbd: `${MOD} B`, onClick: () => setSidebarOpen(s => !s) },
+      { kind: 'action' as const, label: 'Cambiar modo de vista', icon: 'columns' as const, kbd: `${MOD} P`, onClick: cycleView },
+      { kind: 'action' as const, label: 'Cambiar tema', icon: 'moon' as const, onClick: () => setTheme(t => t === 'light' ? 'dark' : 'light') },
+      { kind: 'action' as const, label: 'Exportar archivo actual', icon: 'download' as const, onClick: exportCurrent },
+      ...(activeNode ? [
+        { kind: 'action' as const, label: `Renombrar "${activeNode.name}"`, icon: 'rename' as const, kbd: 'F2', onClick: () => setRenamingId(activeId!) },
+        { kind: 'action' as const, label: `Eliminar "${activeNode.name}"`, icon: 'trash' as const, onClick: () => handleDelete(activeId!) },
+      ] : []),
+    ].filter(a => match(a.label))
+    return { files, actions }
+  }, [paletteQuery, tree, activeId, activeNode, handleCreate, cycleView, exportCurrent, openFile, handleDelete, openDirectory])
+
+  const flatPalette = useMemo(() => [...paletteItems.files, ...paletteItems.actions], [paletteItems])
+  useEffect(() => { setPaletteSel(0) }, [paletteQuery, paletteOpen])
+
+  const stats = useMemo(() => {
+    if (!activeNode) return null
+    const text = activeNode.content || ''
+    const words = (text.match(/\S+/g) || []).length
+    return { words, chars: text.length, lines: text.split('\n').length, readMins: Math.max(1, Math.round(words / 220)) }
+  }, [activeNode])
+
+  const html = useMemo(() => activeNode ? mdRender(activeNode.content || '') : '', [activeNode?.content])
+  const rootChildren = (tree.nodes[tree.root] as TreeFolderNode)?.children ?? []
+  const activeDirty = activeId ? dirtyFsIds.has(activeId) : false
+
+  // ── JSX ──────────────────────────────────────────────────────────────────
 
   return (
-    <>
-      <style>{css}</style>
-      <div className="app-root">
-        {needRefresh && (
-          <div className="update-banner">
-            <span className="update-banner-icon">⚡</span>
-            <span className="update-banner-text">
-              hay una <strong>nueva versión</strong> disponible
-            </span>
-            <button
-              className="btn-update"
-              onClick={() => { void updateServiceWorker(true); }}
-            >
-              actualizar
-            </button>
-            <button
-              className="btn-update-dismiss"
-              onClick={() => setNeedRefresh(false)}
-              title="Descartar"
-            >✕</button>
-          </div>
-        )}
-        <div className="app">
-        {/* mobile backdrop */}
-        {sidebarOpen && (
-          <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
-        )}
+    <div className="app">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".md,.markdown,.txt"
+        multiple
+        style={{ display: 'none' }}
+        onChange={openFilesViaInput}
+      />
 
-        {/* SIDEBAR */}
-        <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
-          <div className="sidebar-header">
-            <button className="btn-close-sidebar" onClick={() => setSidebarOpen(false)} title="Cerrar">✕</button>
-            <span className="sidebar-title">docs</span>
-            <button className="btn-dir" onClick={openDirectory} title="Anclar directorio">⊞</button>
-            <button className="btn-open" onClick={() => fileInputRef.current?.click()} title="Abrir archivo .md">↑</button>
-            <button className="btn-new" onClick={() => openModal({ kind: "new-local" })} title="Nuevo documento local">＋</button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".md,.markdown,.txt"
-              multiple
-              style={{ display: "none" }}
-              onChange={handleFileOpen}
-            />
+      {/* Titlebar */}
+      <div className="titlebar">
+        <div className="lights">
+          <span className="light r" /><span className="light y" /><span className="light g" />
+          <span style={{ color: 'var(--ink-3)', fontSize: 11, marginLeft: 10, fontWeight: 500, letterSpacing: '0.02em' }}>
+            MD Editor
+          </span>
+        </div>
+        <div className="title-center">
+          {activeNode ? (
+            <>
+              <Icon name="file-md" width={12} height={12} />
+              <span>{pathOf(tree, activeId!).replace(/^\//, '')}</span>
+              {activeDirty && <span className="dirty-dot" title="Cambios sin guardar" />}
+            </>
+          ) : (
+            <span style={{ opacity: 0.6 }}>Ningún archivo abierto</span>
+          )}
+        </div>
+        <div className="title-right">
+          {installPrompt && (
+            <button className="icon-btn" onClick={handleInstall} title="Instalar app">
+              <Icon name="download" />
+            </button>
+          )}
+          <button
+            className={`icon-btn ${sidebarOpen ? 'active' : ''}`}
+            onClick={() => setSidebarOpen(s => !s)}
+            title={`Mostrar/ocultar sidebar (${MOD}B)`}
+          >
+            <Icon name="sidebar" />
+          </button>
+          <button className="icon-btn" onClick={() => setPaletteOpen(true)} title={`Paleta de comandos (${MOD}K)`}>
+            <Icon name="command" />
+          </button>
+          <button
+            className={`icon-btn ${theme === 'dark' ? 'active' : ''}`}
+            onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
+            title="Cambiar tema"
+          >
+            <Icon name={theme === 'light' ? 'moon' : 'sun'} />
+          </button>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className={`body ${sidebarOpen ? '' : 'no-sidebar'}`}>
+        <aside className="sidebar">
+          <div className="sidebar-head">
+            <h3>Archivos</h3>
+            <div className="actions">
+              <button className="icon-btn" title="Nuevo archivo" onClick={() => handleCreate(tree.root, 'file')}>
+                <Icon name="new-file" />
+              </button>
+              <button className="icon-btn" title="Nueva carpeta" onClick={() => handleCreate(tree.root, 'folder')}>
+                <Icon name="new-folder" />
+              </button>
+              <button className="icon-btn" title="Abrir archivo(s)" onClick={() => fileInputRef.current?.click()}>
+                <Icon name="file" />
+              </button>
+              <button className="icon-btn" title="Abrir directorio" onClick={() => void openDirectory()}>
+                <Icon name="folder-open" />
+              </button>
+            </div>
           </div>
           {dirName && (
             <div className="dir-label">
-              <span>⌂</span>
+              <Icon name="folder-open" />
               <span className="dir-label-name" title={dirName}>{dirName}</span>
-              <button
-                className="btn-row-act"
-                onClick={() => openModal({ kind: "new-fs-file", path: [] })}
-                title="Nuevo archivo en la raíz"
-              >＋</button>
-              <button
-                className="btn-row-act"
-                onClick={() => openModal({ kind: "new-fs-folder", path: [] })}
-                title="Nueva carpeta en la raíz"
-              >⊟</button>
-              <button className="btn-unpin" onClick={unpinDirectory} title="Desanclar directorio">✕</button>
+              <button className="dir-label-unpin" onClick={unpinDirectory} title="Desvincular directorio">×</button>
             </div>
           )}
-          <div className="doc-list">
-            {docs.length === 0 && (
-              <div style={{ padding: "16px", color: "#6e7681", fontSize: "11px", textAlign: "center" }}>
-                Sin documentos
-              </div>
-            )}
-            {(() => {
-              const dirDocs = docs.filter(d => d.fileHandle);
-              const localDocs = docs.filter(d => !d.fileHandle);
-
-              const renderDocItem = (doc: Doc, depth = 0) => (
-                <div
-                  key={doc.id}
-                  className={`doc-item${activeId === doc.id ? " active" : ""}${activeId === doc.id && unsaved ? " unsaved" : ""}`}
-                  style={{ paddingLeft: `${14 + depth * 14}px` }}
-                  onClick={() => selectDoc(doc)}
-                >
-                  <div className="doc-item-dot" />
-                  <div className="doc-item-name" title={doc.title}>{doc.title}</div>
-                  {doc.fileHandle && (
-                    <button
-                      className="btn-row-act"
-                      title="Renombrar"
-                      onClick={e => { e.stopPropagation(); openModal({ kind: "rename-file", docId: doc.id }); }}
-                    >✎</button>
-                  )}
-                  <button
-                    className="btn-del"
-                    title="Eliminar"
-                    onClick={e => { e.stopPropagation(); void deleteDoc(doc.id); }}
-                  >×</button>
-                </div>
-              );
-
-              const renderTree = (items: FileTreeItem[], depth = 0): React.ReactNode =>
-                items.map(item => {
-                  if ("type" in item && item.type === "folder") {
-                    const collapsed = collapsedFolders.has(item.key);
-                    const segs = item.key.split("/").filter(Boolean);
-                    return (
-                      <div key={item.key} className="tree-section">
-                        <div
-                          className="folder-row"
-                          style={{ paddingLeft: `${14 + depth * 14}px` }}
-                          onClick={() => toggleFolder(item.key)}
-                        >
-                          <span className="folder-chevron">{collapsed ? "▶" : "▼"}</span>
-                          <span className="folder-icon">{collapsed ? "📁" : "📂"}</span>
-                          <span className="folder-name">{item.name}</span>
-                          <button
-                            className="btn-row-act"
-                            title="Nuevo archivo aquí"
-                            onClick={e => { e.stopPropagation(); openModal({ kind: "new-fs-file", path: segs }); }}
-                          >＋</button>
-                          <button
-                            className="btn-row-act"
-                            title="Nueva subcarpeta"
-                            onClick={e => { e.stopPropagation(); openModal({ kind: "new-fs-folder", path: segs }); }}
-                          >⊟</button>
-                        </div>
-                        {!collapsed && renderTree(item.children, depth + 1)}
-                      </div>
-                    );
-                  }
-                  return renderDocItem(item as Doc, depth);
-                });
-
-              const showFsTree = dirName !== null;
-              const fsTree = showFsTree ? mergeEmptyFolders(groupByFolder(dirDocs), emptyFolders) : [];
-
+          <div
+            className="tree"
+            onContextMenu={(e) => {
+              if ((e.target as Element).closest('.tree-row')) return
+              e.preventDefault()
+              setMenu({ x: e.clientX, y: e.clientY, items: [
+                { label: 'Nuevo archivo', icon: 'new-file', onClick: () => handleCreate(tree.root, 'file') },
+                { label: 'Nueva carpeta', icon: 'new-folder', onClick: () => handleCreate(tree.root, 'folder') },
+              ]})
+            }}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              const id = e.dataTransfer.getData('text/plain')
+              if (id) handleMove(id, tree.root)
+            }}
+          >
+            {rootChildren.map(cid => {
+              const child = tree.nodes[cid]
+              if (!child) return null
               return (
-                <>
-                  {showFsTree && renderTree(fsTree)}
-                  {showFsTree && localDocs.length > 0 && (
-                    <div style={{ height: "1px", background: "#1e1e1e", margin: "4px 0" }} />
-                  )}
-                  {localDocs.map(doc => renderDocItem(doc, 0))}
-                </>
-              );
-            })()}
-          </div>
-          <div className="sidebar-footer">
-            {needRefresh ? (
-              <span
-                className="version-tag has-update"
-                onClick={() => { void updateServiceWorker(true); }}
-                title="Hay una nueva versión — haz click para actualizar"
-              >
-                <span className="version-dot" />
-                v{APP_VERSION} → actualizar
-              </span>
-            ) : (
-              <span
-                className="version-tag"
-                title={BUILD_DATE ? `Build ${BUILD_DATE}` : undefined}
-              >
-                v{APP_VERSION}
-              </span>
+                <TreeNode
+                  key={cid}
+                  node={child}
+                  tree={tree}
+                  depth={0}
+                  activeId={activeId}
+                  onSelect={openFile}
+                  onToggle={(id) => setTree(t => toggleFolder(t, id))}
+                  onContextMenu={handleContextMenu}
+                  onRename={handleRename}
+                  renamingId={renamingId}
+                  setRenamingId={setRenamingId}
+                  onDropMove={handleMove}
+                  dragState={dragState}
+                  setDragState={setDragState}
+                  dirtyIds={dirtyFsIds}
+                  justCreatedId={justCreatedId}
+                  clearJustCreated={() => setJustCreatedId(null)}
+                />
+              )
+            })}
+            {rootChildren.length === 0 && (
+              <div className="tree-empty">
+                Sin archivos aún.<br />
+                Haz clic en <Icon name="new-file" width={11} height={11} style={{ verticalAlign: -1 }} /> para empezar.
+              </div>
             )}
           </div>
         </aside>
 
-        {/* MAIN */}
-        <div className="main">
-          <div className="toolbar">
-            <button className="btn-menu" onClick={() => setSidebarOpen(o => !o)} title="Documentos">
-              ☰
-            </button>
-            <div className="doc-title-display">
-              {activeDoc
-                ? <span>{activeDoc.title}</span>
-                : <span style={{color:"#6e7681"}}>ningún documento</span>}
-            </div>
-            {installPrompt && (
-              <button
-                className="btn-install"
-                onClick={async () => { await installPrompt.prompt(); setInstallPrompt(null); }}
-                title="Instalar como aplicación"
-              >
-                ↓ instalar
+        <main className="editor-wrap">
+          <div className="tabs">
+            {openTabs.map(tid => {
+              const n = tree.nodes[tid]
+              if (!n) return null
+              const isDirty = dirtyFsIds.has(tid)
+              return (
+                <div
+                  key={tid}
+                  className={`tab ${activeId === tid ? 'active' : ''} ${isDirty ? 'dirty' : ''}`}
+                  onClick={() => setActiveId(tid)}
+                >
+                  <Icon name="file-md" width={11} height={11} style={{ color: 'var(--ink-3)' }} />
+                  <span className="t-name">{n.name}</span>
+                  <button className="t-close" onClick={(e) => { e.stopPropagation(); closeTab(tid) }}>
+                    <Icon name="close" />
+                  </button>
+                </div>
+              )
+            })}
+            <div className="view-modes">
+              <button className={`view-mode-btn ${viewMode === 'edit' ? 'active' : ''}`} onClick={() => setViewMode('edit')}>
+                <Icon name="edit" /> Editar
               </button>
-            )}
-            <div className="mode-group">
-              {(["edit","split","view"] as const).map(m => (
-                <button key={m} className={`btn-mode${mode===m?" active":""}`} onClick={() => setMode(m)}>
-                  {m === "edit" ? "editar" : m === "view" ? "ver" : "split"}
-                </button>
-              ))}
+              <button className={`view-mode-btn ${viewMode === 'split' ? 'active' : ''}`} onClick={() => setViewMode('split')}>
+                <Icon name="columns" /> Dividir
+              </button>
+              <button className={`view-mode-btn ${viewMode === 'preview' ? 'active' : ''}`} onClick={() => setViewMode('preview')}>
+                <Icon name="eye" /> Preview
+              </button>
             </div>
-            <button className="btn-save" onClick={saveDoc} disabled={!unsaved || !activeDoc}>
-              {unsaved && <span className="save-dot" />}
-              guardar
-            </button>
           </div>
 
-          {!activeDoc ? (
-            <div className="editor-area">
-              <div className="empty-state">
-                <div className="empty-state-icon">⌗</div>
-                <div className="empty-state-text">crea o selecciona un documento</div>
-              </div>
-            </div>
-          ) : (
-            <div className="editor-area">
-              {(mode === "edit" || mode === "split") && (
-                <div className="pane">
-                  {mode === "split" && <div className="pane-label">markdown</div>}
-                  <textarea
-                    className="editor-textarea"
-                    value={draftContent}
-                    onChange={e => handleChange(e.target.value)}
-                    spellCheck={false}
-                    placeholder="Escribe markdown aquí…"
-                  />
-                </div>
-              )}
-              {(mode === "view" || mode === "split") && (
-                <div className="pane">
-                  {mode === "split" && <div className="pane-label">preview</div>}
-                  <div
-                    className="preview-pane"
-                    dangerouslySetInnerHTML={{ __html: renderMarkdown(draftContent) }}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* MODAL */}
-        {modalKind && (() => {
-          const k = modalKind.kind;
-          const pathStr =
-            (k === "new-fs-file" || k === "new-fs-folder")
-              ? (modalKind.path.length ? modalKind.path.join("/") : (dirName ?? "raíz"))
-              : "";
-          const title =
-            k === "new-local" ? "nuevo documento"
-            : k === "new-fs-file" ? `nuevo archivo en ${pathStr}`
-            : k === "new-fs-folder" ? `nueva carpeta en ${pathStr}`
-            : "renombrar archivo";
-          const inputLabel =
-            k === "new-fs-folder" ? "nombre de la carpeta"
-            : k === "rename-file" ? "nuevo nombre"
-            : "título";
-          const inputPlaceholder =
-            k === "new-fs-folder" ? "mi-carpeta"
-            : k === "new-fs-file" ? "mi-archivo"
-            : k === "rename-file" ? "nuevo-nombre"
-            : "Mi documento";
-          const showContent = k === "new-local" || k === "new-fs-file";
-          const confirmLabel = k === "rename-file" ? "renombrar" : "crear";
-          return (
-            <div className="modal-overlay" onClick={e => e.target === e.currentTarget && closeModal()}>
-              <div className="modal">
-                <div className="modal-title">{title}</div>
-                <div className="modal-field">
-                  <label className="modal-label">{inputLabel}</label>
-                  <input
-                    ref={modalInputRef}
-                    className="modal-input"
-                    value={modalInput}
-                    onChange={e => setModalInput(e.target.value)}
-                    placeholder={inputPlaceholder}
-                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); void confirmModal(); } }}
-                  />
-                </div>
-                {showContent && (
-                  <div className="modal-field">
-                    <label className="modal-label">contenido inicial (opcional)</label>
+          {activeNode ? (
+            <div
+              ref={panesRef}
+              className={`panes ${viewMode}`}
+              style={viewMode === 'split' ? { gridTemplateColumns: `${splitRatio * 100}% 6px ${(1 - splitRatio) * 100}%` } : undefined}
+            >
+              {(viewMode === 'edit' || viewMode === 'split') && (
+                <div className="editor" ref={editorRef} onScroll={handleEditorScroll}>
+                  <div className="editor-inner">
                     <textarea
-                      className="modal-textarea"
-                      value={modalContent}
-                      onChange={e => setModalContent(e.target.value)}
-                      placeholder={"# Título\n\nContenido..."}
+                      className="textarea"
+                      value={activeNode.content || ''}
+                      onChange={(e) => handleContentChange(e.target.value)}
+                      placeholder={`# ${activeNode.name.replace(/\.md$/, '')}\n\nEmpieza a escribir…`}
+                      spellCheck
                     />
                   </div>
-                )}
-                <div className="modal-actions">
-                  <button className="btn-cancel" onClick={closeModal}>cancelar</button>
-                  <button className="btn-confirm" onClick={() => void confirmModal()}>{confirmLabel}</button>
                 </div>
+              )}
+              {viewMode === 'split' && (
+                <div
+                  className="gutter"
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    dragGutterRef.current = true
+                    document.body.style.cursor = 'col-resize'
+                  }}
+                />
+              )}
+              {(viewMode === 'preview' || viewMode === 'split') && (
+                <div className="preview" ref={previewRef} onClick={handlePreviewClick}>
+                  <div className="preview-inner" dangerouslySetInnerHTML={{ __html: html }} />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="logo"><Icon name="book" width={28} height={28} /></div>
+              <div>
+                <h2>Un lugar tranquilo para escribir</h2>
+                <p>Abre un archivo desde la barra lateral o crea uno nuevo. Todo se guarda automáticamente en este navegador.</p>
+              </div>
+              <div className="shortcuts">
+                <kbd>{MOD} N</kbd><span>Nuevo archivo</span>
+                <kbd>{MOD} K</kbd><span>Paleta de comandos</span>
+                <kbd>{MOD} P</kbd><span>Cambiar modo de vista</span>
+                <kbd>{MOD} B</kbd><span>Mostrar/ocultar sidebar</span>
               </div>
             </div>
-          );
-        })()}
-        </div>
+          )}
+        </main>
       </div>
-    </>
-  );
+
+      {/* Statusbar */}
+      <div className="statusbar">
+        <span className="stat">
+          <span className="pulse" />
+          {activeDirty ? 'Sin guardar' : 'Guardado'}
+        </span>
+        {activeNode && stats && (
+          <>
+            <span className="stat">{stats.words} palabras</span>
+            <span className="stat">{stats.chars} chars</span>
+            <span className="stat">{stats.lines} líneas</span>
+            <span className="stat">~{stats.readMins} min</span>
+          </>
+        )}
+        <span className="sep" />
+        {activeNode && (
+          <button className="stat" onClick={exportCurrent} title="Descargar .md">
+            <Icon name="download" /> Exportar
+          </button>
+        )}
+        {activeDirty && (
+          <button className="stat" onClick={() => void saveDoc()} title={`Guardar (${MOD}S)`}>
+            <Icon name="save" /> Guardar
+          </button>
+        )}
+        <span className="stat">{flatFiles(tree).length} archivos</span>
+        <button className="stat" onClick={() => setPaletteOpen(true)}>{MOD}K</button>
+        <span className="stat" style={{ opacity: 0.45, fontSize: 10 }}>v{__APP_VERSION__}</span>
+      </div>
+
+      {/* Context menu */}
+      <ContextMenu menu={menu} onClose={() => setMenu(null)} />
+
+      {/* Command palette */}
+      {paletteOpen && (
+        <div className="palette-backdrop" onClick={() => setPaletteOpen(false)}>
+          <div
+            className="palette"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown') { setPaletteSel(s => Math.min(flatPalette.length - 1, s + 1)); e.preventDefault() }
+              else if (e.key === 'ArrowUp') { setPaletteSel(s => Math.max(0, s - 1)); e.preventDefault() }
+              else if (e.key === 'Enter') {
+                const item = flatPalette[paletteSel]
+                if (item) { item.onClick(); setPaletteOpen(false); setPaletteQuery('') }
+              } else if (e.key === 'Escape') { setPaletteOpen(false); setPaletteQuery('') }
+            }}
+          >
+            <div className="palette-input">
+              <Icon name="search" />
+              <input
+                autoFocus
+                value={paletteQuery}
+                onChange={(e) => setPaletteQuery(e.target.value)}
+                placeholder="Buscar archivos o ejecutar un comando…"
+              />
+              <kbd style={{ fontSize: 10, color: 'var(--ink-4)', fontFamily: 'var(--mono)' }}>esc</kbd>
+            </div>
+            <div className="palette-list">
+              {flatPalette.length === 0 && <div className="p-empty">Sin resultados</div>}
+              {paletteItems.files.length > 0 && <div className="p-section">Archivos</div>}
+              {paletteItems.files.map((f, i) => (
+                <div
+                  key={f.id}
+                  className={`p-item ${(flatPalette[paletteSel] as {id?: string})?.id === f.id ? 'selected' : ''}`}
+                  onMouseEnter={() => setPaletteSel(i)}
+                  onClick={() => { f.onClick(); setPaletteOpen(false); setPaletteQuery('') }}
+                >
+                  <Icon name={f.icon} />
+                  <span className="p-label">{f.label}</span>
+                  <span className="p-sub">{f.sub}</span>
+                </div>
+              ))}
+              {paletteItems.actions.length > 0 && <div className="p-section">Acciones</div>}
+              {paletteItems.actions.map((a, i) => {
+                const idx = paletteItems.files.length + i
+                return (
+                  <div
+                    key={a.label}
+                    className={`p-item ${idx === paletteSel ? 'selected' : ''}`}
+                    onMouseEnter={() => setPaletteSel(idx)}
+                    onClick={() => { a.onClick(); setPaletteOpen(false); setPaletteQuery('') }}
+                  >
+                    <Icon name={a.icon} />
+                    <span className="p-label">{a.label}</span>
+                    {'kbd' in a && a.kbd && <span className="p-kbd">{a.kbd}</span>}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toasts */}
+      <div className="toast-wrap">
+        {toasts.map(t => (
+          <div key={t.id} className="toast">
+            <Icon name={t.icon as Parameters<typeof Icon>[0]['name']} />
+            {t.msg}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }

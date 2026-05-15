@@ -11,7 +11,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "prompt",
+      registerType: "autoUpdate",
       strategies: "injectManifest",
       srcDir: "src",
       filename: "sw.ts",
@@ -22,9 +22,9 @@ export default defineConfig({
       manifest: {
         name: "MD Editor",
         short_name: "MDEdit",
-        description: "Editor de Markdown offline con diseño terminal",
-        theme_color: "#0d0d0d",
-        background_color: "#0d0d0d",
+        description: "Editor de Markdown offline con diseño Parchment",
+        theme_color: "#f9f8f6",
+        background_color: "#f9f8f6",
         display: "standalone",
         orientation: "any",
         scope: "/pwa-md-editor/",

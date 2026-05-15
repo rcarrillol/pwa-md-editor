@@ -1,0 +1,1212 @@
+/* ============ Self-hosted fonts ============ */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-400-normal-0.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-400-normal-1.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-400-normal-2.woff2') format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-400-normal-3.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-400-normal-4.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-400-normal-5.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-400-normal-6.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-500-normal-0.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-500-normal-1.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-500-normal-2.woff2') format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-500-normal-3.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-500-normal-4.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-500-normal-5.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-500-normal-6.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-600-normal-0.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-600-normal-1.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-600-normal-2.woff2') format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-600-normal-3.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-600-normal-4.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-600-normal-5.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/inter-600-normal-6.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/jetbrains-mono-400-normal-0.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/jetbrains-mono-400-normal-1.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/jetbrains-mono-400-normal-2.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/jetbrains-mono-400-normal-3.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/jetbrains-mono-400-normal-4.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/jetbrains-mono-400-normal-5.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/jetbrains-mono-500-normal-0.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/jetbrains-mono-500-normal-1.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/jetbrains-mono-500-normal-2.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/jetbrains-mono-500-normal-3.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/jetbrains-mono-500-normal-4.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/jetbrains-mono-500-normal-5.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-400-italic-0.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-400-italic-1.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-400-italic-2.woff2') format('woff2');
+  unicode-range: U+0302-0303, U+0305, U+0307-0308, U+0310, U+0312, U+0315, U+031A, U+0326-0327, U+032C, U+032F-0330, U+0332-0333, U+0338, U+033A, U+0346, U+034D, U+0391-03A1, U+03A3-03A9, U+03B1-03C9, U+03D1, U+03D5-03D6, U+03F0-03F1, U+03F4-03F5, U+2016-2017, U+2034-2038, U+203C, U+2040, U+2043, U+2047, U+2050, U+2057, U+205F, U+2070-2071, U+2074-208E, U+2090-209C, U+20D0-20DC, U+20E1, U+20E5-20EF, U+2100-2112, U+2114-2115, U+2117-2121, U+2123-214F, U+2190, U+2192, U+2194-21AE, U+21B0-21E5, U+21F1-21F2, U+21F4-2211, U+2213-2214, U+2216-22FF, U+2308-230B, U+2310, U+2319, U+231C-2321, U+2336-237A, U+237C, U+2395, U+239B-23B7, U+23D0, U+23DC-23E1, U+2474-2475, U+25AF, U+25B3, U+25B7, U+25BD, U+25C1, U+25CA, U+25CC, U+25FB, U+266D-266F, U+27C0-27FF, U+2900-2AFF, U+2B0E-2B11, U+2B30-2B4C, U+2BFE, U+3030, U+FF5B, U+FF5D, U+1D400-1D7FF, U+1EE00-1EEFF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-400-italic-3.woff2') format('woff2');
+  unicode-range: U+0001-000C, U+000E-001F, U+007F-009F, U+20DD-20E0, U+20E2-20E4, U+2150-218F, U+2190, U+2192, U+2194-2199, U+21AF, U+21E6-21F0, U+21F3, U+2218-2219, U+2299, U+22C4-22C6, U+2300-243F, U+2440-244A, U+2460-24FF, U+25A0-27BF, U+2800-28FF, U+2921-2922, U+2981, U+29BF, U+29EB, U+2B00-2BFF, U+4DC0-4DFF, U+FFF9-FFFB, U+10140-1018E, U+10190-1019C, U+101A0, U+101D0-101FD, U+102E0-102FB, U+10E60-10E7E, U+1D2C0-1D2D3, U+1D2E0-1D37F, U+1F000-1F0FF, U+1F100-1F1AD, U+1F1E6-1F1FF, U+1F30D-1F30F, U+1F315, U+1F31C, U+1F31E, U+1F320-1F32C, U+1F336, U+1F378, U+1F37D, U+1F382, U+1F393-1F39F, U+1F3A7-1F3A8, U+1F3AC-1F3AF, U+1F3C2, U+1F3C4-1F3C6, U+1F3CA-1F3CE, U+1F3D4-1F3E0, U+1F3ED, U+1F3F1-1F3F3, U+1F3F5-1F3F7, U+1F408, U+1F415, U+1F41F, U+1F426, U+1F43F, U+1F441-1F442, U+1F444, U+1F446-1F449, U+1F44C-1F44E, U+1F453, U+1F46A, U+1F47D, U+1F4A3, U+1F4B0, U+1F4B3, U+1F4B9, U+1F4BB, U+1F4BF, U+1F4C8-1F4CB, U+1F4D6, U+1F4DA, U+1F4DF, U+1F4E3-1F4E6, U+1F4EA-1F4ED, U+1F4F7, U+1F4F9-1F4FB, U+1F4FD-1F4FE, U+1F503, U+1F507-1F50B, U+1F50D, U+1F512-1F513, U+1F53E-1F54A, U+1F54F-1F5FA, U+1F610, U+1F650-1F67F, U+1F687, U+1F68D, U+1F691, U+1F694, U+1F698, U+1F6AD, U+1F6B2, U+1F6B9-1F6BA, U+1F6BC, U+1F6C6-1F6CF, U+1F6D3-1F6D7, U+1F6E0-1F6EA, U+1F6F0-1F6F3, U+1F6F7-1F6FC, U+1F700-1F7FF, U+1F800-1F80B, U+1F810-1F847, U+1F850-1F859, U+1F860-1F887, U+1F890-1F8AD, U+1F8B0-1F8BB, U+1F8C0-1F8C1, U+1F900-1F90B, U+1F93B, U+1F946, U+1F984, U+1F996, U+1F9E9, U+1FA00-1FA6F, U+1FA70-1FA7C, U+1FA80-1FA89, U+1FA8F-1FAC6, U+1FACE-1FADC, U+1FADF-1FAE9, U+1FAF0-1FAF8, U+1FB00-1FBFF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-400-italic-4.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-400-italic-5.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-400-italic-6.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-400-normal-0.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-400-normal-1.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-400-normal-2.woff2') format('woff2');
+  unicode-range: U+0302-0303, U+0305, U+0307-0308, U+0310, U+0312, U+0315, U+031A, U+0326-0327, U+032C, U+032F-0330, U+0332-0333, U+0338, U+033A, U+0346, U+034D, U+0391-03A1, U+03A3-03A9, U+03B1-03C9, U+03D1, U+03D5-03D6, U+03F0-03F1, U+03F4-03F5, U+2016-2017, U+2034-2038, U+203C, U+2040, U+2043, U+2047, U+2050, U+2057, U+205F, U+2070-2071, U+2074-208E, U+2090-209C, U+20D0-20DC, U+20E1, U+20E5-20EF, U+2100-2112, U+2114-2115, U+2117-2121, U+2123-214F, U+2190, U+2192, U+2194-21AE, U+21B0-21E5, U+21F1-21F2, U+21F4-2211, U+2213-2214, U+2216-22FF, U+2308-230B, U+2310, U+2319, U+231C-2321, U+2336-237A, U+237C, U+2395, U+239B-23B7, U+23D0, U+23DC-23E1, U+2474-2475, U+25AF, U+25B3, U+25B7, U+25BD, U+25C1, U+25CA, U+25CC, U+25FB, U+266D-266F, U+27C0-27FF, U+2900-2AFF, U+2B0E-2B11, U+2B30-2B4C, U+2BFE, U+3030, U+FF5B, U+FF5D, U+1D400-1D7FF, U+1EE00-1EEFF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-400-normal-3.woff2') format('woff2');
+  unicode-range: U+0001-000C, U+000E-001F, U+007F-009F, U+20DD-20E0, U+20E2-20E4, U+2150-218F, U+2190, U+2192, U+2194-2199, U+21AF, U+21E6-21F0, U+21F3, U+2218-2219, U+2299, U+22C4-22C6, U+2300-243F, U+2440-244A, U+2460-24FF, U+25A0-27BF, U+2800-28FF, U+2921-2922, U+2981, U+29BF, U+29EB, U+2B00-2BFF, U+4DC0-4DFF, U+FFF9-FFFB, U+10140-1018E, U+10190-1019C, U+101A0, U+101D0-101FD, U+102E0-102FB, U+10E60-10E7E, U+1D2C0-1D2D3, U+1D2E0-1D37F, U+1F000-1F0FF, U+1F100-1F1AD, U+1F1E6-1F1FF, U+1F30D-1F30F, U+1F315, U+1F31C, U+1F31E, U+1F320-1F32C, U+1F336, U+1F378, U+1F37D, U+1F382, U+1F393-1F39F, U+1F3A7-1F3A8, U+1F3AC-1F3AF, U+1F3C2, U+1F3C4-1F3C6, U+1F3CA-1F3CE, U+1F3D4-1F3E0, U+1F3ED, U+1F3F1-1F3F3, U+1F3F5-1F3F7, U+1F408, U+1F415, U+1F41F, U+1F426, U+1F43F, U+1F441-1F442, U+1F444, U+1F446-1F449, U+1F44C-1F44E, U+1F453, U+1F46A, U+1F47D, U+1F4A3, U+1F4B0, U+1F4B3, U+1F4B9, U+1F4BB, U+1F4BF, U+1F4C8-1F4CB, U+1F4D6, U+1F4DA, U+1F4DF, U+1F4E3-1F4E6, U+1F4EA-1F4ED, U+1F4F7, U+1F4F9-1F4FB, U+1F4FD-1F4FE, U+1F503, U+1F507-1F50B, U+1F50D, U+1F512-1F513, U+1F53E-1F54A, U+1F54F-1F5FA, U+1F610, U+1F650-1F67F, U+1F687, U+1F68D, U+1F691, U+1F694, U+1F698, U+1F6AD, U+1F6B2, U+1F6B9-1F6BA, U+1F6BC, U+1F6C6-1F6CF, U+1F6D3-1F6D7, U+1F6E0-1F6EA, U+1F6F0-1F6F3, U+1F6F7-1F6FC, U+1F700-1F7FF, U+1F800-1F80B, U+1F810-1F847, U+1F850-1F859, U+1F860-1F887, U+1F890-1F8AD, U+1F8B0-1F8BB, U+1F8C0-1F8C1, U+1F900-1F90B, U+1F93B, U+1F946, U+1F984, U+1F996, U+1F9E9, U+1FA00-1FA6F, U+1FA70-1FA7C, U+1FA80-1FA89, U+1FA8F-1FAC6, U+1FACE-1FADC, U+1FADF-1FAE9, U+1FAF0-1FAF8, U+1FB00-1FBFF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-400-normal-4.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-400-normal-5.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-400-normal-6.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-600-normal-0.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-600-normal-1.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-600-normal-2.woff2') format('woff2');
+  unicode-range: U+0302-0303, U+0305, U+0307-0308, U+0310, U+0312, U+0315, U+031A, U+0326-0327, U+032C, U+032F-0330, U+0332-0333, U+0338, U+033A, U+0346, U+034D, U+0391-03A1, U+03A3-03A9, U+03B1-03C9, U+03D1, U+03D5-03D6, U+03F0-03F1, U+03F4-03F5, U+2016-2017, U+2034-2038, U+203C, U+2040, U+2043, U+2047, U+2050, U+2057, U+205F, U+2070-2071, U+2074-208E, U+2090-209C, U+20D0-20DC, U+20E1, U+20E5-20EF, U+2100-2112, U+2114-2115, U+2117-2121, U+2123-214F, U+2190, U+2192, U+2194-21AE, U+21B0-21E5, U+21F1-21F2, U+21F4-2211, U+2213-2214, U+2216-22FF, U+2308-230B, U+2310, U+2319, U+231C-2321, U+2336-237A, U+237C, U+2395, U+239B-23B7, U+23D0, U+23DC-23E1, U+2474-2475, U+25AF, U+25B3, U+25B7, U+25BD, U+25C1, U+25CA, U+25CC, U+25FB, U+266D-266F, U+27C0-27FF, U+2900-2AFF, U+2B0E-2B11, U+2B30-2B4C, U+2BFE, U+3030, U+FF5B, U+FF5D, U+1D400-1D7FF, U+1EE00-1EEFF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-600-normal-3.woff2') format('woff2');
+  unicode-range: U+0001-000C, U+000E-001F, U+007F-009F, U+20DD-20E0, U+20E2-20E4, U+2150-218F, U+2190, U+2192, U+2194-2199, U+21AF, U+21E6-21F0, U+21F3, U+2218-2219, U+2299, U+22C4-22C6, U+2300-243F, U+2440-244A, U+2460-24FF, U+25A0-27BF, U+2800-28FF, U+2921-2922, U+2981, U+29BF, U+29EB, U+2B00-2BFF, U+4DC0-4DFF, U+FFF9-FFFB, U+10140-1018E, U+10190-1019C, U+101A0, U+101D0-101FD, U+102E0-102FB, U+10E60-10E7E, U+1D2C0-1D2D3, U+1D2E0-1D37F, U+1F000-1F0FF, U+1F100-1F1AD, U+1F1E6-1F1FF, U+1F30D-1F30F, U+1F315, U+1F31C, U+1F31E, U+1F320-1F32C, U+1F336, U+1F378, U+1F37D, U+1F382, U+1F393-1F39F, U+1F3A7-1F3A8, U+1F3AC-1F3AF, U+1F3C2, U+1F3C4-1F3C6, U+1F3CA-1F3CE, U+1F3D4-1F3E0, U+1F3ED, U+1F3F1-1F3F3, U+1F3F5-1F3F7, U+1F408, U+1F415, U+1F41F, U+1F426, U+1F43F, U+1F441-1F442, U+1F444, U+1F446-1F449, U+1F44C-1F44E, U+1F453, U+1F46A, U+1F47D, U+1F4A3, U+1F4B0, U+1F4B3, U+1F4B9, U+1F4BB, U+1F4BF, U+1F4C8-1F4CB, U+1F4D6, U+1F4DA, U+1F4DF, U+1F4E3-1F4E6, U+1F4EA-1F4ED, U+1F4F7, U+1F4F9-1F4FB, U+1F4FD-1F4FE, U+1F503, U+1F507-1F50B, U+1F50D, U+1F512-1F513, U+1F53E-1F54A, U+1F54F-1F5FA, U+1F610, U+1F650-1F67F, U+1F687, U+1F68D, U+1F691, U+1F694, U+1F698, U+1F6AD, U+1F6B2, U+1F6B9-1F6BA, U+1F6BC, U+1F6C6-1F6CF, U+1F6D3-1F6D7, U+1F6E0-1F6EA, U+1F6F0-1F6F3, U+1F6F7-1F6FC, U+1F700-1F7FF, U+1F800-1F80B, U+1F810-1F847, U+1F850-1F859, U+1F860-1F887, U+1F890-1F8AD, U+1F8B0-1F8BB, U+1F8C0-1F8C1, U+1F900-1F90B, U+1F93B, U+1F946, U+1F984, U+1F996, U+1F9E9, U+1FA00-1FA6F, U+1FA70-1FA7C, U+1FA80-1FA89, U+1FA8F-1FAC6, U+1FACE-1FADC, U+1FADF-1FAE9, U+1FAF0-1FAF8, U+1FB00-1FBFF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-600-normal-4.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-600-normal-5.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/pwa-md-editor/fonts/lora-600-normal-6.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ============ Design tokens ============ */
+:root {
+  --bg: oklch(98.5% 0.004 85);
+  --bg-2: oklch(96.5% 0.006 85);
+  --bg-3: oklch(93% 0.008 85);
+  --panel: oklch(99.2% 0.003 85);
+  --line: oklch(89% 0.008 85);
+  --line-soft: oklch(92% 0.006 85);
+  --ink: oklch(22% 0.012 85);
+  --ink-2: oklch(38% 0.012 85);
+  --ink-3: oklch(55% 0.012 85);
+  --ink-4: oklch(70% 0.01 85);
+  --accent: oklch(62% 0.14 65);
+  --accent-soft: oklch(92% 0.04 65);
+  --danger: oklch(55% 0.15 25);
+  --good: oklch(58% 0.11 150);
+
+  --sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --serif: 'Lora', 'Iowan Old Style', Georgia, serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --shadow-1: 0 1px 0 oklch(0% 0 0 / 0.04), 0 1px 2px oklch(0% 0 0 / 0.04);
+  --shadow-2: 0 10px 30px oklch(0% 0 0 / 0.08), 0 2px 6px oklch(0% 0 0 / 0.04);
+}
+
+[data-theme="dark"] {
+  --bg: oklch(18% 0.012 85);
+  --bg-2: oklch(21% 0.012 85);
+  --bg-3: oklch(25% 0.012 85);
+  --panel: oklch(20% 0.012 85);
+  --line: oklch(30% 0.012 85);
+  --line-soft: oklch(26% 0.012 85);
+  --ink: oklch(94% 0.006 85);
+  --ink-2: oklch(78% 0.008 85);
+  --ink-3: oklch(62% 0.01 85);
+  --ink-4: oklch(48% 0.012 85);
+  --accent: oklch(72% 0.14 65);
+  --accent-soft: oklch(30% 0.06 65);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+body {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+input, textarea { font: inherit; color: inherit; }
+::selection { background: var(--accent-soft); color: var(--ink); }
+
+/* ============ App shell ============ */
+.app {
+  display: grid;
+  grid-template-rows: 38px 1fr 22px;
+  height: 100vh;
+  width: 100vw;
+  background: var(--bg);
+}
+
+/* ============ Titlebar ============ */
+.titlebar {
+  display: grid;
+  grid-template-columns: 220px 1fr 220px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-2);
+  padding: 0 12px;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+.lights { display: flex; gap: 8px; align-items: center; }
+.light {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+}
+.light.r { background: #ff5f57; border-color: #e0443e; }
+.light.y { background: #febc2e; border-color: #dea123; }
+.light.g { background: #28c840; border-color: #1aab29; }
+.title-center {
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.title-center b { color: var(--ink); font-weight: 500; }
+.title-right {
+  display: flex; gap: 4px; justify-content: flex-end; align-items: center;
+}
+.icon-btn {
+  width: 26px; height: 26px; border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--ink-3);
+  transition: background .12s, color .12s;
+}
+.icon-btn:hover { background: var(--bg-3); color: var(--ink); }
+.icon-btn.active { background: var(--accent-soft); color: var(--accent); }
+.icon-btn svg { width: 15px; height: 15px; }
+
+.dirty-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); display: inline-block; margin-left: 4px;
+}
+
+/* ============ Main body ============ */
+.body {
+  display: grid;
+  grid-template-columns: var(--sidebar-w, 240px) 1fr;
+  overflow: hidden;
+  min-height: 0;
+}
+.body.no-sidebar { grid-template-columns: 0 1fr; }
+.body.no-sidebar .sidebar { display: none; }
+
+/* ============ Sidebar ============ */
+.sidebar {
+  background: var(--bg-2);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-head {
+  padding: 10px 12px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sidebar-head h3 {
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+.sidebar-head .actions { display: flex; gap: 2px; }
+.sidebar-head .icon-btn { width: 22px; height: 22px; border-radius: 4px; }
+.sidebar-head .icon-btn svg { width: 13px; height: 13px; }
+
+.tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2px 6px 40px;
+  font-size: 12.5px;
+}
+.tree-node {
+  position: relative;
+}
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+  color: var(--ink-2);
+  height: 24px;
+  user-select: none;
+  position: relative;
+}
+.tree-row:hover { background: var(--bg-3); color: var(--ink); }
+.tree-row.active {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+.tree-row.dragover {
+  background: var(--accent-soft);
+  outline: 1px dashed var(--accent);
+  outline-offset: -2px;
+}
+.tree-row .chev {
+  width: 12px; height: 12px;
+  color: var(--ink-4);
+  transition: transform .15s;
+  flex-shrink: 0;
+}
+.tree-row.open .chev { transform: rotate(90deg); }
+.tree-row .ico {
+  width: 14px; height: 14px;
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+.tree-row.active .ico { color: var(--accent); }
+.tree-row .name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1;
+}
+.tree-row .dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+  opacity: 0;
+}
+.tree-row.dirty .dot { opacity: 1; }
+.tree-row input.rename {
+  flex: 1;
+  border: 1px solid var(--accent);
+  background: var(--panel);
+  border-radius: 3px;
+  padding: 1px 4px;
+  outline: none;
+  font-size: 12.5px;
+  min-width: 0;
+}
+.tree-children {
+  padding-left: 14px;
+  border-left: 1px dashed var(--line);
+  margin-left: 12px;
+}
+.tree-empty {
+  padding: 12px;
+  font-size: 12px;
+  color: var(--ink-4);
+  text-align: center;
+  font-style: italic;
+}
+
+/* ============ Editor area ============ */
+.editor-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg);
+}
+.tabs {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-height: 34px;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 12px;
+  font-size: 12px;
+  color: var(--ink-3);
+  border-right: 1px solid var(--line);
+  cursor: pointer;
+  background: var(--bg-2);
+  max-width: 220px;
+  position: relative;
+  user-select: none;
+}
+.tab:hover { color: var(--ink-2); }
+.tab.active {
+  background: var(--bg);
+  color: var(--ink);
+}
+.tab.active::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 1px;
+  background: var(--bg);
+}
+.tab .t-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tab .t-close {
+  width: 16px; height: 16px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-4);
+  margin-left: 2px;
+}
+.tab .t-close:hover { background: var(--bg-3); color: var(--ink); }
+.tab .t-close svg { width: 10px; height: 10px; }
+.tab.dirty .t-close::before {
+  content: '';
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+}
+.tab.dirty:hover .t-close::before,
+.tab.dirty .t-close:hover::before { display: none; }
+.tab.dirty .t-close svg { display: none; }
+.tab.dirty:hover .t-close svg,
+.tab.dirty .t-close:hover svg { display: block; }
+
+.view-modes {
+  margin-left: auto;
+  padding: 4px 8px;
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+.view-mode-btn {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--ink-3);
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.view-mode-btn:hover { background: var(--bg-3); color: var(--ink); }
+.view-mode-btn.active { background: var(--panel); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.view-mode-btn svg { width: 11px; height: 11px; }
+
+/* ============ Split panes ============ */
+.panes {
+  flex: 1;
+  display: grid;
+  overflow: hidden;
+  min-height: 0;
+}
+.panes.edit { grid-template-columns: 1fr; }
+.panes.split { grid-template-columns: 1fr 6px 1fr; }
+.panes.preview { grid-template-columns: 1fr; }
+.gutter {
+  background: var(--line-soft);
+  cursor: col-resize;
+  position: relative;
+}
+.gutter:hover, .gutter.dragging { background: var(--accent); }
+.gutter::after {
+  content: '';
+  position: absolute;
+  left: -3px; right: -3px; top: 0; bottom: 0;
+}
+
+/* ============ Editor ============ */
+.editor {
+  overflow-y: auto;
+  position: relative;
+  background: var(--bg);
+}
+.editor-inner {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 42px 52px 60vh;
+  position: relative;
+}
+.textarea {
+  width: 100%;
+  min-height: calc(100vh - 200px);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  resize: none;
+  font-family: var(--mono);
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--ink);
+  letter-spacing: 0.005em;
+  caret-color: var(--accent);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  tab-size: 2;
+}
+
+/* ============ Preview ============ */
+.preview {
+  overflow-y: auto;
+  background: var(--bg);
+  border-left: 1px solid var(--line);
+}
+.panes.preview .preview { border-left: 0; }
+.preview-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 42px 52px 60vh;
+  font-family: var(--serif);
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--ink);
+}
+.preview-inner h1, .preview-inner h2, .preview-inner h3,
+.preview-inner h4, .preview-inner h5, .preview-inner h6 {
+  font-family: var(--sans);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  margin: 1.8em 0 0.6em;
+  color: var(--ink);
+}
+.preview-inner h1:first-child,
+.preview-inner h2:first-child,
+.preview-inner > *:first-child { margin-top: 0; }
+.preview-inner h1 { font-size: 2em; letter-spacing: -0.025em; }
+.preview-inner h2 { font-size: 1.5em; padding-bottom: 0.3em; border-bottom: 1px solid var(--line); }
+.preview-inner h3 { font-size: 1.2em; }
+.preview-inner h4 { font-size: 1.05em; }
+.preview-inner p { margin: 0 0 1em; }
+.preview-inner a { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent-soft); text-underline-offset: 3px; }
+.preview-inner a:hover { text-decoration-color: var(--accent); }
+.preview-inner strong { font-weight: 600; color: var(--ink); }
+.preview-inner em { font-style: italic; }
+.preview-inner del { color: var(--ink-3); }
+.preview-inner code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--bg-2);
+  padding: 0.14em 0.38em;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+}
+.preview-inner pre {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  line-height: 1.55;
+  margin: 1em 0;
+}
+.preview-inner pre code {
+  background: transparent; border: 0; padding: 0; font-size: inherit;
+}
+.preview-inner blockquote {
+  border-left: 3px solid var(--accent);
+  padding: 0.2em 0 0.2em 1em;
+  color: var(--ink-2);
+  font-style: italic;
+  margin: 1em 0;
+}
+.preview-inner ul, .preview-inner ol { padding-left: 1.6em; margin: 0 0 1em; }
+.preview-inner li { margin: 0.25em 0; }
+.preview-inner li > ul, .preview-inner li > ol { margin: 0.25em 0; }
+.preview-inner hr { border: 0; border-top: 1px solid var(--line); margin: 2em 0; }
+.preview-inner table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.95em;
+  font-family: var(--sans);
+}
+.preview-inner th, .preview-inner td {
+  border: 1px solid var(--line);
+  padding: 6px 12px;
+  text-align: left;
+}
+.preview-inner th { background: var(--bg-2); font-weight: 600; }
+.preview-inner img {
+  max-width: 100%;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}
+.preview-inner input[type="checkbox"] {
+  margin-right: 6px;
+  accent-color: var(--accent);
+}
+.task-item { list-style: none; margin-left: -1.3em; }
+
+/* ============ Statusbar ============ */
+.statusbar {
+  border-top: 1px solid var(--line);
+  background: var(--bg-2);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 11px;
+  color: var(--ink-3);
+  gap: 16px;
+  user-select: none;
+}
+.statusbar .sep { flex: 1; }
+.statusbar .stat { display: inline-flex; align-items: center; gap: 5px; }
+.statusbar .stat svg { width: 11px; height: 11px; color: var(--ink-4); }
+.statusbar .pulse {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--good);
+}
+.statusbar button.stat { cursor: pointer; height: 22px; padding: 0 6px; border-radius: 3px; }
+.statusbar button.stat:hover { background: var(--bg-3); color: var(--ink); }
+
+/* ============ Empty state ============ */
+.empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 18px;
+  color: var(--ink-3);
+  padding: 40px;
+  text-align: center;
+}
+.empty-state .logo {
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  display: grid; place-items: center;
+  color: var(--accent);
+}
+.empty-state .logo svg { width: 28px; height: 28px; }
+.empty-state h2 {
+  margin: 0; font-size: 18px; font-weight: 500; color: var(--ink);
+  font-family: var(--serif);
+  letter-spacing: -0.01em;
+}
+.empty-state p { margin: 0; font-size: 13px; max-width: 380px; line-height: 1.55; }
+.empty-state .shortcuts {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 8px 16px;
+  margin-top: 12px;
+  font-size: 12px;
+}
+.empty-state .shortcuts kbd {
+  font-family: var(--mono);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10.5px;
+  color: var(--ink-2);
+}
+.empty-state .shortcuts span { text-align: left; color: var(--ink-3); }
+
+/* ============ Context menu ============ */
+.context-menu {
+  position: fixed;
+  min-width: 180px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow-2);
+  padding: 4px;
+  z-index: 100;
+  font-size: 12.5px;
+}
+.context-menu .cm-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 5px;
+  color: var(--ink);
+  text-align: left;
+}
+.context-menu .cm-item:hover { background: var(--accent-soft); }
+.context-menu .cm-item.danger:hover { background: oklch(95% 0.04 25); color: var(--danger); }
+.context-menu .cm-item svg { width: 13px; height: 13px; color: var(--ink-3); }
+.context-menu .cm-item:hover svg { color: inherit; }
+.context-menu .cm-shortcut { margin-left: auto; font-size: 10.5px; color: var(--ink-4); font-family: var(--mono); }
+.context-menu .cm-sep { height: 1px; background: var(--line); margin: 4px 0; }
+
+/* ============ Command palette ============ */
+.palette-backdrop {
+  position: fixed; inset: 0;
+  background: oklch(0% 0 0 / 0.25);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  padding-top: 12vh;
+  z-index: 200;
+  animation: fade .12s ease;
+}
+@keyframes fade { from { opacity: 0; } }
+.palette {
+  width: 560px;
+  max-width: 90vw;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 60vh;
+  animation: pop .14s cubic-bezier(.2,.9,.3,1.2);
+}
+@keyframes pop { from { transform: translateY(-6px); opacity: 0; } }
+.palette-input {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.palette-input svg { width: 16px; height: 16px; color: var(--ink-3); }
+.palette-input input {
+  flex: 1;
+  border: 0; outline: 0; background: transparent;
+  font-size: 15px;
+  color: var(--ink);
+}
+.palette-input input::placeholder { color: var(--ink-4); }
+.palette-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px;
+}
+.p-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--ink);
+}
+.p-item:hover, .p-item.selected { background: var(--accent-soft); }
+.p-item svg { width: 14px; height: 14px; color: var(--ink-3); }
+.p-item .p-label { flex: 1; }
+.p-item .p-sub { color: var(--ink-4); font-size: 11.5px; }
+.p-item .p-kbd { font-family: var(--mono); font-size: 10.5px; color: var(--ink-4); }
+.p-section {
+  padding: 8px 12px 4px;
+  font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--ink-4);
+}
+.p-empty { padding: 24px; text-align: center; color: var(--ink-4); font-size: 13px; }
+
+/* ============ Toast ============ */
+.toast-wrap {
+  position: fixed;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--ink);
+  color: var(--bg);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  box-shadow: var(--shadow-2);
+  animation: toast-in .2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toast svg { width: 12px; height: 12px; }
+@keyframes toast-in { from { transform: translateY(8px); opacity: 0; } }
+
+/* ============ Dir label ============ */
+.dir-label {
+  padding: 5px 12px;
+  font-size: 10.5px;
+  color: var(--good);
+  background: oklch(from var(--good) l c h / 0.08);
+  border-bottom: 1px solid oklch(from var(--good) l c h / 0.2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.dir-label svg { width: 12px; height: 12px; flex-shrink: 0; }
+.dir-label-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.dir-label-unpin {
+  background: none; border: none; cursor: pointer;
+  color: oklch(from var(--good) l c h / 0.5);
+  border-radius: 3px; padding: 1px 3px; font-size: 12px;
+  font-family: inherit; line-height: 1;
+  transition: color .12s;
+}
+.dir-label-unpin:hover { color: var(--danger); }
+
+/* Scrollbars */
+.editor::-webkit-scrollbar, .preview::-webkit-scrollbar, .tree::-webkit-scrollbar,
+.palette-list::-webkit-scrollbar {
+  width: 10px; height: 10px;
+}
+.editor::-webkit-scrollbar-thumb, .preview::-webkit-scrollbar-thumb,
+.tree::-webkit-scrollbar-thumb, .palette-list::-webkit-scrollbar-thumb {
+  background: transparent; border-radius: 5px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+.editor:hover::-webkit-scrollbar-thumb, .preview:hover::-webkit-scrollbar-thumb,
+.tree:hover::-webkit-scrollbar-thumb {
+  background: var(--line); background-clip: padding-box;
+  border: 3px solid transparent;
+}
+
+/* ============ Responsive — mobile (≤600px) ============ */
+@media (max-width: 600px) {
+  .app {
+    grid-template-rows: 44px 1fr 22px;
+  }
+
+  /* Sidebar column removed from grid; becomes fixed overlay */
+  .body,
+  .body.no-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 44px;
+    bottom: 22px;
+    width: min(280px, 85vw);
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: var(--shadow-2);
+  }
+
+  .body:not(.no-sidebar) .sidebar {
+    display: flex;
+    transform: translateX(0);
+  }
+
+  .body.no-sidebar .sidebar {
+    display: none;
+  }
+
+  .titlebar {
+    grid-template-columns: auto 1fr auto;
+    padding: 0 8px;
+  }
+
+  .lights {
+    display: none;
+  }
+
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+  }
+
+  .sidebar-head .icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .tree-row {
+    height: 40px;
+    padding: 0 8px;
+  }
+
+  .tabs {
+    min-height: 40px;
+  }
+
+  /* Prevent iOS auto-zoom on textarea focus */
+  .textarea {
+    font-size: 16px;
+  }
+
+  .editor-inner {
+    padding: 24px 20px 60vh;
+  }
+
+  .preview-inner {
+    padding: 24px 20px 60vh;
+    font-size: 15px;
+  }
+}
